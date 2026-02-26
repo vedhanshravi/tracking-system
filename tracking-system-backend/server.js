@@ -21,6 +21,9 @@ app.get("/test-db", async (req, res) => {
  
 const userRoutes = require("./routes/userRoutes");
 app.use("/users", userRoutes);
+
+const vehicleRoutes = require("./routes/vehicleRoutes");
+app.use("/vehicles", vehicleRoutes);
  
 
  
@@ -38,4 +41,7 @@ app.get("/protected", authMiddleware, (req, res) => {
     user: req.user,
   });
 });
+
  
+// const vehicleRoutes = require("./routes/vehicleRoutes");
+// app.use("/vehicle", vehicleRoutes);
