@@ -15,7 +15,7 @@ function Dashboard() {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const response = await fetch("http://localhost:5000/vehicles/my", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/my`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -31,7 +31,7 @@ function Dashboard() {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const response = await fetch("http://localhost:5000/vehicles/stats", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -52,7 +52,7 @@ function Dashboard() {
     }
 
     // Fetch user info from backend
-    fetch("http://localhost:5000/users/me", {
+    fetch(`${process.env.REACT_APP_API_URL}/users/me`, {
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
@@ -84,7 +84,7 @@ function Dashboard() {
   };
 
   const handleScan = async () => {
-    const response = await fetch("http://localhost:5000/vehicles/scan", {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/scan`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -103,7 +103,7 @@ function Dashboard() {
 
   const handleAddVehicle = async () => {
     const token = localStorage.getItem("token");
-    const response = await fetch("http://localhost:5000/vehicles/add", {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
