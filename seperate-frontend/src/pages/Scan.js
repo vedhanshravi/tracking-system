@@ -10,7 +10,7 @@ function Scan() {
     const fetchVehicle = async () => {
       try {
         const response = await fetch(
-          "http://localhost:5000/vehicles/scan",
+          `${process.env.REACT_APP_API_URL}/vehicles/scan`,
           {
             method: "POST",
             headers: {
