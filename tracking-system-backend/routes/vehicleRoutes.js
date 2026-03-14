@@ -45,20 +45,21 @@ router.post("/scan", async (req, res) => {
       [vehicle.id, ip, city, country]
     );
 
-    // 🔔 Send Email
-    await sendEmail(
-      vehicle.email,
-      "Vehicle Scanned Alert 🚗",
-      `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} in ${city}, ${country}.`
-    );
-
     const maskedPhone =
       "XXXXXXX" + vehicle.owner_phone.slice(-3);
 
+    // Send response immediately
     res.json({
       ownerName: vehicle.owner_name,
       phone: maskedPhone,
     });
+
+    // 🔔 Send Email asynchronously (doesn't block the response)
+    sendEmail(
+      vehicle.email,
+      "Vehicle Scanned Alert 🚗",
+      `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} in ${city}, ${country}.`
+    ).catch(err => console.error('Email send failed:', err));
 
   } catch (err) {
     console.error(err);
