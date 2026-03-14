@@ -116,7 +116,7 @@ router.get("/my", verifyToken, async (req, res) => {
 
     const vehicles = await Promise.all(
       result.rows.map(async (vehicle) => {
-        const qrData = `http://localhost:3000/scan/${vehicle.vehicle_number}`;
+        const qrData = `https://tracking-system-liart.vercel.app/scan/${vehicle.vehicle_number}`;
 
         const qrImage = await QRCode.toDataURL(qrData);
 
