@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
+const callOwner = require("../utils/twilioCall");
 
 router.post("/scan", async (req, res) => {
   const { vehicleNumber } = req.body;
@@ -163,5 +164,32 @@ router.get("/stats", verifyToken, async (req, res) => {
   }
 });
  
+router.post("/call-owner/:vehicleNumber", async (req, res) => {
+  const { vehicleNumber } = req.params;
+
+  try {
+    const result = await pool.query(
+      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
+      [vehicleNumber]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Vehicle not found" });
+    }
+
+    const phone = result.rows[0].owner_phone;
+
+    const callSid = await callOwner(phone);
+
+    res.json({
+      message: "Calling owner...",
+      callSid,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Call failed" });
+  }
+});
 
 module.exports = router;
