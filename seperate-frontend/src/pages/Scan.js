@@ -37,6 +37,24 @@ function Scan() {
     fetchVehicle();
   }, [vehicleNumber]);
 
+  const callOwner = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/vehicles/call-owner/${vehicleNumber}`,
+        {
+          method: "POST",
+        }
+      );
+
+      const data = await response.json();
+
+      alert(data.message);
+
+    } catch (error) {
+      console.error("Call failed", error);
+    }
+  };
+
   return (
     <div style={{ padding: "50px" }}>
       <h2>Vehicle Information</h2>
@@ -49,17 +67,16 @@ function Scan() {
           <p><strong>Contact:</strong> {owner.phone}</p>
 
           <button
-            onClick={() => window.location.href = `tel:${owner.phone}`}
+            onClick={callOwner}
             style={{ marginTop: "10px" }}
           >
-            Call Owner
+          📞 Call Owner
           </button>
         </div>
       )}
     </div>
   );
 }
-
       
 
 export default Scan;
