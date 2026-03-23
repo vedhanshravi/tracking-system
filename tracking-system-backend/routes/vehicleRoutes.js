@@ -5,6 +5,9 @@ const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
 const { client } = require("../utils/twilioCall");
 
+// Global variable to store the current vehicle number for incoming calls
+global.currentVehicleCall = null;
+
 router.post("/scan", async (req, res) => {
   const { vehicleNumber } = req.body;
 
@@ -228,26 +231,67 @@ router.post("/connect", async (req, res) => {
   }
 });
 
-// POST /set-twiml - set voice URL for Twilio number
+// POST /set-twiml - store vehicle number for incoming call
 router.post("/set-twiml", async (req, res) => {
   const { vehicleNumber } = req.body;
 
   try {
-    const twimlUrl = `${process.env.REACT_APP_API_URL}/vehicles/call/${vehicleNumber}`;
-
-    // Update the incoming phone number's voice URL
-    const number = await client.incomingPhoneNumbers.list({ phoneNumber: process.env.TWILIO_PHONE_NUMBER });
-    if (number.length > 0) {
-      await client.incomingPhoneNumbers(number[0].sid).update({
-        voiceUrl: twimlUrl,
-      });
-    }
-
-    res.json({ message: "TwiML URL set" });
+    // Store the current vehicle number globally
+    global.currentVehicleCall = vehicleNumber;
+    
+    console.log(`Set current vehicle call to: ${vehicleNumber}`);
+    res.json({ message: "Vehicle call set", vehicleNumber });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Failed to set TwiML" });
+    res.status(500).json({ message: "Failed to set vehicle call" });
+  }
+});
+
+// GET /incoming-call - Twilio webhook for incoming calls
+router.get("/incoming-call", async (req, res) => {
+  try {
+    const vehicleNumber = global.currentVehicleCall;
+
+    if (!vehicleNumber) {
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>No vehicle selected for call</Say>
+</Response>`;
+      res.type('text/xml');
+      return res.send(twiml);
+    }
+
+    const result = await pool.query(
+      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
+      [vehicleNumber]
+    );
+
+    if (result.rows.length === 0) {
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>Vehicle not found</Say>
+</Response>`;
+      res.type('text/xml');
+      return res.send(twiml);
+    }
+
+    const ownerPhone = result.rows[0].owner_phone;
+
+    // Return TwiML to dial the owner
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial callerId="${process.env.TWILIO_PHONE_NUMBER}">
+    ${ownerPhone}
+  </Dial>
+</Response>`;
+
+    res.type('text/xml');
+    res.send(twiml);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
   }
 });
 
