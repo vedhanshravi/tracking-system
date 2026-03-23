@@ -192,4 +192,16 @@ router.post("/call-owner/:vehicleNumber", async (req, res) => {
   }
 });
 
+app.post("/twilio/connect-call", (req, res) => {
+  res.set("Content-Type", "text/xml");
+
+  const ownerPhone = req.query.phone;
+
+  res.send(`
+    <Response>
+      <Dial>${ownerPhone}</Dial>
+    </Response>
+  `);
+});
+
 module.exports = router;
