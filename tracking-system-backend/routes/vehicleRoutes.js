@@ -28,16 +28,19 @@ router.post("/scan", async (req, res) => {
     const vehicle = result.rows[0];
 
     // 🌍 Get IP address of requester
-    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const forwarded = req.headers["x-forwarded-for"];
+    const clientIp = forwarded ? forwarded.split(",")[0].trim() : req.socket.remoteAddress;
+    const probeIp = (clientIp === "::1" || clientIp.startsWith("127.")) ? "8.8.8.8" : clientIp;
 
     // 🌍 Get location
     const geoResponse = await fetch(
-      `http://ip-api.com/json/${ip}`
+      `http://ip-api.com/json/${probeIp}?fields=status,country,city,query`
     );
     const geoData = await geoResponse.json();
 
-    const city = geoData.city || "Unknown";
-    const country = geoData.country || "Unknown";
+    const city = geoData.city || "Unknown city";
+    const country = geoData.country || "Unknown country";
+    const ip = geoData.query || probeIp;
 
     // 🔥 Insert scan with location
     await pool.query(
