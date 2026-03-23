@@ -42,6 +42,25 @@ app.get("/protected", authMiddleware, (req, res) => {
   });
 });
 
- 
+app.post("/twilio/incoming-call", (req, res) => {
+  res.set("Content-Type", "text/xml");
+
+  const sessions = global.callSessions || {};
+  const latestSession = Object.values(sessions).pop();
+
+  if (!latestSession) {
+    return res.send(`
+      <Response>
+        <Say>No active session</Say>
+      </Response>
+    `);
+  }
+
+  res.send(`
+    <Response>
+      <Dial>${latestSession.ownerPhone}</Dial>
+    </Response>
+  `);
+});
 // const vehicleRoutes = require("./routes/vehicleRoutes");
 // app.use("/vehicle", vehicleRoutes);
