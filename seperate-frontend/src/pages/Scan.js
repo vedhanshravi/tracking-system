@@ -35,6 +35,8 @@ function Scan() {
     };
 
     fetchVehicle();
+  }, [vehicleNumber]);
+
   const startCall = async () => {
     try {
       // Set the TwiML URL for the Twilio number
