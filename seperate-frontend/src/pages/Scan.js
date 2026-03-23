@@ -35,11 +35,23 @@ function Scan() {
     };
 
     fetchVehicle();
-  }, [vehicleNumber]);
-
   const startCall = async () => {
-    // Open dial pad with owner's phone
-    window.location.href = `tel:${owner.phone}`;
+    try {
+      // Set the TwiML URL for the Twilio number
+      await fetch(`${process.env.REACT_APP_API_URL}/vehicles/set-twiml`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ vehicleNumber }),
+      });
+
+      // Open the dial pad
+      window.location.href = `tel:+13502206189`; // Replace with your Twilio number
+
+    } catch (error) {
+      console.error("Error initiating call:", error);
+    }
   };
 
   return (
