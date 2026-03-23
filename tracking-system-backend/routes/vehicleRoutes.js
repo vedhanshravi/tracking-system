@@ -2,8 +2,7 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
-const sendEmail = require("../utils/sendEmail");
-const { client } = require("../utils/twilioCall");
+const { sendSmsMessage, client } = require("../utils/twilioCall");
 
 // Global variable to store the current vehicle number for incoming calls
 global.currentVehicleCall = null;
@@ -58,12 +57,11 @@ router.post("/scan", async (req, res) => {
       phone: maskedPhone,
     });
 
-    // 🔔 Send Email asynchronously (doesn't block the response)
-    sendEmail(
-      vehicle.email,
-      "Vehicle Scanned Alert 🚗",
+    // 🔔 Send SMS via Twilio asynchronously (doesn't block the response)
+    sendSmsMessage(
+      vehicle.owner_phone,
       `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} in ${city}, ${country}.`
-    ).catch(err => console.error('Email send failed:', err));
+    ).catch(err => console.error('SMS send failed:', err));
 
   } catch (err) {
     console.error(err);
