@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
-const callOwner = require("../utils/twilioCall");
+const { client } = require("../utils/twilioCall");
 
 router.post("/scan", async (req, res) => {
   const { vehicleNumber } = req.body;
@@ -164,7 +164,9 @@ router.get("/stats", verifyToken, async (req, res) => {
   }
 });
  
-router.post("/call-owner/:vehicleNumber", async (req, res) => {
+
+
+// GET /call/:vehicleNumber - returns TwiML to dial owner
   const { vehicleNumber } = req.params;
 
   try {
@@ -194,34 +196,89 @@ router.post("/call-owner/:vehicleNumber", async (req, res) => {
 
 
 
-// POST /create-call-session
-router.post("/create-call-session/:vehicleNumber", async (req, res) => {
+// GET /call/:vehicleNumber - returns TwiML to dial owner
+router.get("/call/:vehicleNumber", async (req, res) => {
   const { vehicleNumber } = req.params;
 
-  const result = await pool.query(
-    "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
-    [vehicleNumber]
-  );
+  try {
+    const result = await pool.query(
+      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
+      [vehicleNumber]
+    );
 
-  if (result.rows.length === 0) {
-    return res.status(404).json({ message: "Vehicle not found" });
+    if (result.rows.length === 0) {
+      return res.status(404).send("Vehicle not found");
+    }
+
+    const ownerPhone = result.rows[0].owner_phone;
+
+    // Return TwiML to dial the owner
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial callerId="${process.env.TWILIO_PHONE_NUMBER}">
+    ${ownerPhone}
+  </Dial>
+</Response>`;
+
+    res.type('text/xml');
+    res.send(twiml);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
   }
-
-  const ownerPhone = result.rows[0].owner_phone;
-
-  const sessionId = Date.now().toString(); // simple for now
-
-  // store in memory (or DB later)
-  global.callSessions = global.callSessions || {};
-  global.callSessions[sessionId] = {
-    ownerPhone,
-    createdAt: new Date()
-  };
-
-  res.json({
-    sessionId,
-    twilioNumber: process.env.TWILIO_PHONE_NUMBER
-  });
 });
- 
+
+// POST /connect - connect scanner to owner
+router.post("/connect", async (req, res) => {
+  const { scannerPhone, vehicleNumber } = req.body;
+
+  try {
+    const result = await pool.query(
+      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
+      [vehicleNumber]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Vehicle not found" });
+    }
+
+    const ownerPhone = result.rows[0].owner_phone;
+
+    const callSid = await connectScannerToOwner(scannerPhone, ownerPhone);
+
+    res.json({
+      message: "Connecting...",
+      callSid,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Connection failed" });
+  }
+});
+
+// POST /set-twiml - set voice URL for Twilio number
+router.post("/set-twiml", async (req, res) => {
+  const { vehicleNumber } = req.body;
+
+  try {
+    const twimlUrl = `${process.env.REACT_APP_API_URL}/vehicles/call/${vehicleNumber}`;
+
+    // Update the incoming phone number's voice URL
+    const number = await client.incomingPhoneNumbers.list({ phoneNumber: process.env.TWILIO_PHONE_NUMBER });
+    if (number.length > 0) {
+      await client.incomingPhoneNumbers(number[0].sid).update({
+        voiceUrl: twimlUrl,
+      });
+    }
+
+    res.json({ message: "TwiML URL set" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to set TwiML" });
+  }
+});
+
 module.exports = router;

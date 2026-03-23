@@ -5,19 +5,4 @@ const client = twilio(
   process.env.TWILIO_AUTH_TOKEN
 );
 
-async function callOwner(phoneNumber) {
-  try {
-    const call = await client.calls.create({
-      url: "http://demo.twilio.com/docs/voice.xml",
-      to: phoneNumber,
-      from: process.env.TWILIO_PHONE_NUMBER,
-    });
-
-    return call.sid;
-  } catch (error) {
-    console.error("Twilio call error:", error);
-    throw error;
-  }
-}
-
-module.exports = callOwner;
+module.exports = { client };
