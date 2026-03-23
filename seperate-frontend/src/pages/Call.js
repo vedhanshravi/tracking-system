@@ -1,4 +1,5 @@
-import { useParams, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { useEffect } from "react";
 
 function Call() {
   const { vehicleNumber } = useParams();
