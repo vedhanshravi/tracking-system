@@ -192,16 +192,36 @@ router.post("/call-owner/:vehicleNumber", async (req, res) => {
   }
 });
 
-app.post("/twilio/connect-call", (req, res) => {
-  res.set("Content-Type", "text/xml");
 
-  const ownerPhone = req.query.phone;
 
-  res.send(`
-    <Response>
-      <Dial>${ownerPhone}</Dial>
-    </Response>
-  `);
+// POST /create-call-session
+router.post("/create-call-session/:vehicleNumber", async (req, res) => {
+  const { vehicleNumber } = req.params;
+
+  const result = await pool.query(
+    "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
+    [vehicleNumber]
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(404).json({ message: "Vehicle not found" });
+  }
+
+  const ownerPhone = result.rows[0].owner_phone;
+
+  const sessionId = Date.now().toString(); // simple for now
+
+  // store in memory (or DB later)
+  global.callSessions = global.callSessions || {};
+  global.callSessions[sessionId] = {
+    ownerPhone,
+    createdAt: new Date()
+  };
+
+  res.json({
+    sessionId,
+    twilioNumber: process.env.TWILIO_PHONE_NUMBER
+  });
 });
-
+ 
 module.exports = router;
