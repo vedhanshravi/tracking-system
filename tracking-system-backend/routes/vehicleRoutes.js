@@ -52,21 +52,34 @@ router.post("/scan", async (req, res) => {
 
     // 🌍 Get location
     const geoResponse = await fetch(
-      `http://ip-api.com/json/${probeIp}?fields=status,country,city,query`
+      `http://ip-api.com/json/${probeIp}?fields=status,country,city,query,lat,lon`
     );
     const geoData = await geoResponse.json();
 
     const city = geoData.city || "Unknown city";
     const country = geoData.country || "Unknown country";
+    const latitude = geoData.lat != null ? geoData.lat : null;
+    const longitude = geoData.lon != null ? geoData.lon : null;
     const ip = geoData.query || probeIp;
+    const mapUrl = latitude !== null && longitude !== null
+      ? `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+      : null;
 
     // 🔥 Insert scan with location
     await pool.query(
       `
-      INSERT INTO scans (vehicle_id, ip_address, city, country)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO scans (
+        vehicle_id,
+        ip_address,
+        city,
+        country,
+        latitude,
+        longitude,
+        map_url
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       `,
-      [vehicle.id, ip, city, country]
+      [vehicle.id, ip, city, country, latitude, longitude, mapUrl]
     );
 
     const maskedPhone =
@@ -78,12 +91,16 @@ router.post("/scan", async (req, res) => {
       phone: maskedPhone,
       ownerPhone: vehicle.owner_phone,
       emergencyContact: vehicle.emergency_contact,
+      latitude,
+      longitude,
+      mapUrl,
     });
 
+    const locationText = mapUrl ? ` Location: ${mapUrl}` : "";
     // 🔔 Send SMS via Twilio asynchronously (doesn't block the response)
     sendSmsMessage(
       vehicle.owner_phone,
-      `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} in ${city}, ${country}.`
+      `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} in ${city}, ${country}.${locationText}`
     ).catch(err => console.error('SMS send failed:', err));
 
   } catch (err) {
@@ -107,6 +124,14 @@ const verifyToken = (req, res, next) => {
   } catch (err) {
     return res.status(403).json({ message: "Invalid token" });
   }
+};
+
+// Admin-only middleware
+const verifyAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
 };
 
 // Add vehicle
@@ -201,6 +226,26 @@ router.get("/my", verifyToken, async (req, res) => {
   }
 });
 
+// Admin: list vehicles awaiting verification
+router.get("/pending", verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM vehicles WHERE is_verified = false"
+    );
+
+    const vehicles = result.rows.map((vehicle) => ({
+      ...vehicle,
+      rc_url: vehicle.rc_document ? `${req.protocol}://${req.get("host")}/uploads/${vehicle.rc_document}` : null,
+      adhar_url: vehicle.adhar_document ? `${req.protocol}://${req.get("host")}/uploads/${vehicle.adhar_document}` : null,
+    }));
+
+    res.json(vehicles);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.get("/stats", verifyToken, async (req, res) => {
   try {
     console.log("/vehicles/stats requested by user:", req.user);
@@ -229,8 +274,7 @@ router.get("/stats", verifyToken, async (req, res) => {
 });
 
 // Admin: verify vehicle documents
-router.post("/verify/:vehicleId", verifyToken, async (req, res) => {
-  // Add real admin check if needed (role in token)
+router.post("/verify/:vehicleId", verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { vehicleId } = req.params;
     await pool.query("UPDATE vehicles SET is_verified = true WHERE id = $1", [vehicleId]);

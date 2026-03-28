@@ -33,7 +33,7 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
     const token = jwt.sign(
-      { userId: user.id },
+      { userId: user.id, role: user.role || "user" },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -49,7 +49,7 @@ exports.getCurrentUser = async (req, res) => {
     const userId = req.user.userId;
  
     const result = await pool.query(
-      "SELECT id, name, email, created_at FROM users WHERE id = $1",
+      "SELECT id, name, email, created_at, role FROM users WHERE id = $1",
       [userId]
     );
  

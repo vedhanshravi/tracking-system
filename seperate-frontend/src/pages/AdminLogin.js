@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
- 
-function Login() {
+
+function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+
   const handleLogin = async () => {
     const response = await fetch(`${process.env.REACT_APP_API_URL}/users/login`, {
       method: "POST",
@@ -13,18 +14,35 @@ function Login() {
       },
       body: JSON.stringify({ email, password }),
     });
+
     const data = await response.json();
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      navigate("/dashboard");
+
+    if (!data.token) {
+      alert("Admin login failed");
+      return;
+    }
+
+    localStorage.setItem("token", data.token);
+
+    const userResponse = await fetch(`${process.env.REACT_APP_API_URL}/users/me`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${data.token}`,
+      },
+    });
+    const userData = await userResponse.json();
+
+    if (userResponse.ok && userData.role === "admin") {
+      navigate("/admin");
     } else {
-      alert("Login failed");
+      localStorage.removeItem("token");
+      alert("Admin access denied");
     }
   };
- 
+
   return (
     <div style={{ padding: "50px" }}>
-      <h2>Login</h2>
+      <h2>Executive Login</h2>
       <input
         placeholder="Email"
         value={email}
@@ -40,20 +58,12 @@ function Login() {
       />
       <br />
       <br />
-      <button onClick={handleLogin}>Login</button>
+      <button onClick={handleLogin}>Login as Executive</button>
       <p style={{ marginTop: 12 }}>
-        Don’t have an account?{" "}
-        <button onClick={() => navigate("/register")}>Register</button>
-      </p>
-      <p style={{ marginTop: 12 }}>
-        <button onClick={() => navigate("/scan")}>Vehicle Scanner</button>
-      </p>
-      <p style={{ marginTop: 12 }}>
-        <button onClick={() => navigate("/admin-login")}>Executive Login</button>
+        <button onClick={() => navigate("/")}>Back to User Login</button>
       </p>
     </div>
   );
 }
 
-export default Login;
- 
+export default AdminLogin;

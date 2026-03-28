@@ -4,6 +4,8 @@ import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
 import Scan from "./pages/Scan";
 import Call from "./pages/Call";
+import AdminLogin from "./pages/AdminLogin";
+import Admin from "./pages/Admin";
 
 function App() {
   return (
@@ -13,7 +15,9 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/scan/:vehicleNumber" element={<Scan />} />
-        <Route path="/call/:vehicleNumber" element={<Call />} />       
+        <Route path="/call/:vehicleNumber" element={<Call />} />
+        <Route path="/admin-login" element={<AdminLogin />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </Router>
   );
