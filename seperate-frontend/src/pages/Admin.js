@@ -55,6 +55,29 @@ function Admin() {
     }
   };
 
+  const viewDocument = async (vehicleId, type) => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/document/${vehicleId}/${type}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        alert(data.message || "Unable to load document");
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (err) {
+      console.error(err);
+      alert("Unable to load document");
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
@@ -81,10 +104,10 @@ function Admin() {
             <p><strong>Uploaded Aadhar:</strong> {vehicle.adhar_document_name || vehicle.adhar_document}</p>
 
             <p>
-              RC: <a href={`${process.env.REACT_APP_API_URL}/vehicles/document/${vehicle.id}/rc`} target="_blank" rel="noopener noreferrer">View</a>
+              RC: <button type="button" onClick={() => viewDocument(vehicle.id, "rc")}>View</button>
             </p>
             <p>
-              Aadhar: <a href={`${process.env.REACT_APP_API_URL}/vehicles/document/${vehicle.id}/adhar`} target="_blank" rel="noopener noreferrer">View</a>
+              Aadhar: <button type="button" onClick={() => viewDocument(vehicle.id, "adhar")}>View</button>
             </p>
 
             <button onClick={() => handleVerify(vehicle.id)}>Mark as Verified</button>
