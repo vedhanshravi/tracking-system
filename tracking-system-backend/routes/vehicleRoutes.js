@@ -2,7 +2,25 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 const { sendSmsMessage, client } = require("../utils/twilioCall");
+
+// Ensure upload dir exists
+const uploadDir = path.join(__dirname, "..", "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const name = `${Date.now()}-${file.fieldname}${ext}`;
+    cb(null, name);
+  },
+});
+
+const upload = multer({ storage });
 
 // Global variable to store the current vehicle number for incoming calls
 global.currentVehicleCall = null;
@@ -90,18 +108,52 @@ const verifyToken = (req, res, next) => {
 };
 
 // Add vehicle
-router.post("/add", verifyToken, async (req, res) => {
+router.post("/add", verifyToken, upload.fields([{ name: "rc", maxCount: 1 }, { name: "adhar", maxCount: 1 }]), async (req, res) => {
   const { vehicleNumber, ownerName, ownerPhone } = req.body;
+  const rcFile = req.files?.rc?.[0];
+  const adharFile = req.files?.adhar?.[0];
+
+  if (!rcFile || !adharFile) {
+    return res.status(400).json({ message: "RC and Aadhar documents are required" });
+  }
 
   try {
     console.log("/vehicles/add requested by user:", req.user);
+
+    const rcFileBuffer = fs.readFileSync(rcFile.path);
+    const adharFileBuffer = fs.readFileSync(adharFile.path);
+
     await pool.query(
-      `INSERT INTO vehicles (user_id, vehicle_number, owner_name, owner_phone)
-       VALUES ($1, $2, $3, $4)`,
-      [req.user.userId || req.user.id, vehicleNumber.toUpperCase(), ownerName, ownerPhone]
+      `INSERT INTO vehicles (
+          user_id,
+          vehicle_number,
+          owner_name,
+          owner_phone,
+          rc_document,
+          adhar_document,
+          rc_document_name,
+          adhar_document_name,
+          rc_document_data,
+          adhar_document_data,
+          is_verified
+        )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        req.user.userId || req.user.id,
+        vehicleNumber.toUpperCase(),
+        ownerName,
+        ownerPhone,
+        rcFile.filename,
+        adharFile.filename,
+        rcFile.originalname,
+        adharFile.originalname,
+        rcFileBuffer,
+        adharFileBuffer,
+        false,
+      ]
     );
 
-    res.json({ message: "Vehicle added successfully" });
+    res.json({ message: "Vehicle added successfully; pending admin approval" });
 
   } catch (err) {
     console.error(err);
@@ -122,13 +174,17 @@ router.get("/my", verifyToken, async (req, res) => {
 
     const vehicles = await Promise.all(
       result.rows.map(async (vehicle) => {
-        const qrData = `https://tracking-system-liart.vercel.app/scan/${vehicle.vehicle_number}`;
-
-        const qrImage = await QRCode.toDataURL(qrData);
+        let qrImage = null;
+        if (vehicle.is_verified) {
+          const qrData = `https://tracking-system-liart.vercel.app/scan/${vehicle.vehicle_number}`;
+          qrImage = await QRCode.toDataURL(qrData);
+        }
 
         return {
           ...vehicle,
           qr: qrImage,
+          rc_url: vehicle.rc_document ? `${req.protocol}://${req.get("host")}/uploads/${vehicle.rc_document}` : null,
+          adhar_url: vehicle.adhar_document ? `${req.protocol}://${req.get("host")}/uploads/${vehicle.adhar_document}` : null,
         };
       })
     );
@@ -162,6 +218,19 @@ router.get("/stats", verifyToken, async (req, res) => {
     console.log("/vehicles/stats rows:", result.rows.length);
     res.json(result.rows);
 
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Admin: verify vehicle documents
+router.post("/verify/:vehicleId", verifyToken, async (req, res) => {
+  // Add real admin check if needed (role in token)
+  try {
+    const { vehicleId } = req.params;
+    await pool.query("UPDATE vehicles SET is_verified = true WHERE id = $1", [vehicleId]);
+    res.json({ message: "Vehicle verified" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
