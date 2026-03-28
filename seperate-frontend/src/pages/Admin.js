@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Admin() {
@@ -7,15 +7,7 @@ function Admin() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    if (!token) {
-      navigate("/admin-login");
-      return;
-    }
-    fetchPendingVehicles();
-  }, [navigate, token]);
-
-  const fetchPendingVehicles = async () => {
+  const fetchPendingVehicles = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/pending`, {
         headers: {
@@ -32,7 +24,15 @@ function Admin() {
     } catch (err) {
       setError("Server error while loading pending vehicles");
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/admin-login");
+      return;
+    }
+    fetchPendingVehicles();
+  }, [navigate, token, fetchPendingVehicles]);
 
   const handleVerify = async (vehicleId) => {
     try {
