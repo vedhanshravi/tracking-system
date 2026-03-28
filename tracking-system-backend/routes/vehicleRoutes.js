@@ -226,14 +226,31 @@ router.get("/my", verifyToken, async (req, res) => {
   }
 });
 
-// Admin: list vehicles awaiting verification
+// Admin: list vehicles awaiting verification with pagination
 router.get("/pending", verifyToken, verifyAdmin, async (req, res) => {
   try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const pageSize = 5;
+    const offset = (page - 1) * pageSize;
+
+    const countResult = await pool.query(
+      "SELECT COUNT(*) AS total FROM vehicles WHERE is_verified = false"
+    );
+    const total = parseInt(countResult.rows[0].total, 10);
+    const totalPages = Math.ceil(total / pageSize);
+
     const result = await pool.query(
-      "SELECT * FROM vehicles WHERE is_verified = false"
+      "SELECT * FROM vehicles WHERE is_verified = false ORDER BY id ASC LIMIT $1 OFFSET $2",
+      [pageSize, offset]
     );
 
-    res.json(result.rows);
+    res.json({
+      data: result.rows,
+      page,
+      pageSize,
+      total,
+      totalPages,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -324,7 +341,11 @@ router.get("/stats", verifyToken, async (req, res) => {
 router.post("/verify/:vehicleId", verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    await pool.query("UPDATE vehicles SET is_verified = true WHERE id = $1", [vehicleId]);
+    const verifierName = req.user.name || null;
+    await pool.query(
+      "UPDATE vehicles SET is_verified = true, verified_by = $2, verified_at = NOW(), verification_status = 'approved' WHERE id = $1",
+      [vehicleId, verifierName]
+    );
     res.json({ message: "Vehicle verified" });
   } catch (err) {
     console.error(err);

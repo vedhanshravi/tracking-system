@@ -4,12 +4,14 @@ import { useNavigate } from "react-router-dom";
 function Admin() {
   const [pendingVehicles, setPendingVehicles] = useState([]);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  const fetchPendingVehicles = useCallback(async () => {
+  const fetchPendingVehicles = useCallback(async (pageNumber = 1) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/pending`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/pending?page=${pageNumber}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -19,8 +21,11 @@ function Admin() {
         setError(data.message || "Failed to load pending vehicles");
         return;
       }
-      const data = await response.json();
-      setPendingVehicles(data);
+      const result = await response.json();
+      setPendingVehicles(result.data || []);
+      setPage(result.page || 1);
+      setTotalPages(result.totalPages || 1);
+      setError("");
     } catch (err) {
       setError("Server error while loading pending vehicles");
     }
@@ -48,7 +53,7 @@ function Admin() {
         return;
       }
       alert("Vehicle verified successfully");
-      fetchPendingVehicles();
+      fetchPendingVehicles(page);
     } catch (err) {
       console.error(err);
       alert("Server error during verification");
@@ -90,6 +95,27 @@ function Admin() {
       <hr />
 
       {error && <p style={{ color: "red" }}>{error}</p>}
+
+      <div style={{ marginBottom: "12px" }}>
+        <button
+          type="button"
+          onClick={() => fetchPendingVehicles(Math.max(page - 1, 1))}
+          disabled={page <= 1}
+          style={{ marginRight: "8px" }}
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          onClick={() => fetchPendingVehicles(Math.min(page + 1, totalPages))}
+          disabled={page >= totalPages}
+        >
+          Next
+        </button>
+        <span style={{ marginLeft: "16px" }}>
+          Page {page} of {totalPages}
+        </span>
+      </div>
 
       {pendingVehicles.length === 0 ? (
         <p>No vehicles pending verification.</p>
