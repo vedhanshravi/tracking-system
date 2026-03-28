@@ -7,6 +7,7 @@ function Dashboard() {
   const [vehicleData, setVehicleData] = useState(null);
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
   const [vehicles, setVehicles] = useState([]);
   const [stats, setStats] = useState([]);
   const [rcFile, setRcFile] = useState(null);
@@ -105,8 +106,8 @@ function Dashboard() {
 
   const handleAddVehicle = async () => {
     const token = localStorage.getItem("token");
-    if (!vehicleNumber || !ownerName || !ownerPhone || !rcFile || !adharFile) {
-      alert("Please fill all fields and upload both RC and Aadhar documents.");
+    if (!vehicleNumber || !ownerName || !ownerPhone || !emergencyContact || !rcFile || !adharFile) {
+      alert("Please fill all fields, including emergency contact, and upload both RC and Aadhar documents.");
       return;
     }
 
@@ -114,6 +115,7 @@ function Dashboard() {
     formData.append("vehicleNumber", vehicleNumber);
     formData.append("ownerName", ownerName);
     formData.append("ownerPhone", ownerPhone);
+    formData.append("emergencyContact", emergencyContact);
     formData.append("rc", rcFile);
     formData.append("adhar", adharFile);
 
@@ -131,6 +133,7 @@ function Dashboard() {
       setVehicleNumber("");
       setOwnerName("");
       setOwnerPhone("");
+      setEmergencyContact("");
       setRcFile(null);
       setAdharFile(null);
       fetchVehicles();
@@ -186,6 +189,11 @@ function Dashboard() {
         placeholder="Owner Phone"
         value={ownerPhone}
         onChange={(e) => setOwnerPhone(e.target.value)}
+      />
+      <input
+        placeholder="Emergency Contact Number"
+        value={emergencyContact}
+        onChange={(e) => setEmergencyContact(e.target.value)}
       />
       <div>
         <label>
