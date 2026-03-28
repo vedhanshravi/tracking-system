@@ -80,16 +80,12 @@ function Admin() {
             <p><strong>Uploaded RC:</strong> {vehicle.rc_document_name || vehicle.rc_document}</p>
             <p><strong>Uploaded Aadhar:</strong> {vehicle.adhar_document_name || vehicle.adhar_document}</p>
 
-            {vehicle.rc_url && (
-              <p>
-                RC: <a href={vehicle.rc_url} target="_blank" rel="noopener noreferrer">View</a>
-              </p>
-            )}
-            {vehicle.adhar_url && (
-              <p>
-                Aadhar: <a href={vehicle.adhar_url} target="_blank" rel="noopener noreferrer">View</a>
-              </p>
-            )}
+            <p>
+              RC: <a href={`${process.env.REACT_APP_API_URL}/vehicles/document/${vehicle.id}/rc`} target="_blank" rel="noopener noreferrer">View</a>
+            </p>
+            <p>
+              Aadhar: <a href={`${process.env.REACT_APP_API_URL}/vehicles/document/${vehicle.id}/adhar`} target="_blank" rel="noopener noreferrer">View</a>
+            </p>
 
             <button onClick={() => handleVerify(vehicle.id)}>Mark as Verified</button>
           </div>

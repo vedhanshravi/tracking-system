@@ -233,13 +233,60 @@ router.get("/pending", verifyToken, verifyAdmin, async (req, res) => {
       "SELECT * FROM vehicles WHERE is_verified = false"
     );
 
-    const vehicles = result.rows.map((vehicle) => ({
-      ...vehicle,
-      rc_url: vehicle.rc_document ? `${req.protocol}://${req.get("host")}/uploads/${vehicle.rc_document}` : null,
-      adhar_url: vehicle.adhar_document ? `${req.protocol}://${req.get("host")}/uploads/${vehicle.adhar_document}` : null,
-    }));
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
-    res.json(vehicles);
+// Admin: serve vehicle document by ID and type
+router.get("/document/:vehicleId/:type", verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { vehicleId, type } = req.params;
+    if (!["rc", "adhar"].includes(type)) {
+      return res.status(400).json({ message: "Invalid document type" });
+    }
+
+    const filenameField = type === "rc" ? "rc_document" : "adhar_document";
+    const originalNameField = type === "rc" ? "rc_document_name" : "adhar_document_name";
+    const dataField = type === "rc" ? "rc_document_data" : "adhar_document_data";
+
+    const result = await pool.query(
+      `SELECT ${filenameField}, ${originalNameField}, ${dataField} FROM vehicles WHERE id = $1`,
+      [vehicleId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Vehicle not found" });
+    }
+
+    const vehicle = result.rows[0];
+    const filename = vehicle[filenameField];
+    const originalName = vehicle[originalNameField];
+    const fileData = vehicle[dataField];
+
+    if (filename) {
+      const filePath = path.join(__dirname, "..", "uploads", filename);
+      if (fs.existsSync(filePath)) {
+        return res.sendFile(filePath);
+      }
+    }
+
+    if (fileData) {
+      const safeName = originalName || `${type}_document`;
+      const ext = path.extname(safeName).toLowerCase();
+      let contentType = "application/octet-stream";
+      if (ext === ".pdf") contentType = "application/pdf";
+      else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+      else if (ext === ".png") contentType = "image/png";
+
+      res.setHeader("Content-Disposition", `inline; filename="${safeName}"`);
+      res.setHeader("Content-Type", contentType);
+      return res.send(fileData);
+    }
+
+    return res.status(404).json({ message: "Document not found" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
