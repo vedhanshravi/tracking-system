@@ -5,16 +5,20 @@ function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [ownerPhone, setOwnerPhone] = useState("");
+  const [rcFile, setRcFile] = useState(null);
+  const [adharFile, setAdharFile] = useState(null);
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-    if (!name || !email || !password) {
-      alert("Please fill all fields");
+    if (!name || !email || !password || !vehicleNumber || !ownerPhone || !rcFile || !adharFile) {
+      alert("Please fill all required fields, including vehicle and documents.");
       return;
     }
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/register`, {
+      const registerResp = await fetch(`${process.env.REACT_APP_API_URL}/users/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -22,14 +26,55 @@ function Register() {
         body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await response.json();
+      const registerData = await registerResp.json();
 
-      if (response.status === 201) {
-        alert("Registration successful! Please login.");
-        navigate("/"); // redirect to login
-      } else {
-        alert(data.message || "Registration failed");
+      if (registerResp.status !== 201) {
+        alert(registerData.message || "Registration failed");
+        return;
       }
+
+      const loginResp = await fetch(`${process.env.REACT_APP_API_URL}/users/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const loginData = await loginResp.json();
+      if (!loginResp.ok || !loginData.token) {
+        alert("User registered, but login failed. Please login manually.");
+        navigate("/");
+        return;
+      }
+
+      const token = loginData.token;
+      localStorage.setItem("token", token);
+
+      const formData = new FormData();
+      formData.append("vehicleNumber", vehicleNumber);
+      formData.append("ownerName", name);
+      formData.append("ownerPhone", ownerPhone);
+      formData.append("rc", rcFile);
+      formData.append("adhar", adharFile);
+
+      const vehicleResp = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/add`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const vehicleData = await vehicleResp.json();
+      if (!vehicleResp.ok) {
+        alert("User registered, but vehicle upload failed: " + (vehicleData.message || "unknown"));
+        navigate("/");
+        return;
+      }
+
+      alert("Registration complete and vehicle uploaded. Waiting for admin verification.");
+      navigate("/dashboard");
     } catch (err) {
       console.error(err);
       alert("Server error");
@@ -45,36 +90,50 @@ function Register() {
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
-      
-
-
-
+      <input
+        placeholder="Vehicle Number"
+        value={vehicleNumber}
+        onChange={(e) => setVehicleNumber(e.target.value)}
+      />
+      <input
+        placeholder="Owner Phone"
+        value={ownerPhone}
+        onChange={(e) => setOwnerPhone(e.target.value)}
+      />
       <input
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
-      
-
-
-
       <input
         type="password"
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      
-
-
-
+      <div>
+        <label>
+          RC Document:
+          <input
+            type="file"
+            accept=".pdf,image/*"
+            onChange={(e) => setRcFile(e.target.files[0])}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          Aadhar Document:
+          <input
+            type="file"
+            accept=".pdf,image/*"
+            onChange={(e) => setAdharFile(e.target.files[0])}
+          />
+        </label>
+      </div>
       <button onClick={handleRegister}>Register</button>
-      
-
-
-
       <p>
-        Already have an account?{" "}
+        Already have an account?{' '}
         <button onClick={() => navigate("/")}>Login</button>
       </p>
     </div>
@@ -82,4 +141,3 @@ function Register() {
 }
 
 export default Register;
- 

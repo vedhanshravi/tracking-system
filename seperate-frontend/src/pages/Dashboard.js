@@ -9,6 +9,8 @@ function Dashboard() {
   const [ownerPhone, setOwnerPhone] = useState("");
   const [vehicles, setVehicles] = useState([]);
   const [stats, setStats] = useState([]);
+  const [rcFile, setRcFile] = useState(null);
+  const [adharFile, setAdharFile] = useState(null);
   const navigate = useNavigate();
 
   const fetchVehicles = async () => {
@@ -103,21 +105,34 @@ function Dashboard() {
 
   const handleAddVehicle = async () => {
     const token = localStorage.getItem("token");
+    if (!vehicleNumber || !ownerName || !ownerPhone || !rcFile || !adharFile) {
+      alert("Please fill all fields and upload both RC and Aadhar documents.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("vehicleNumber", vehicleNumber);
+    formData.append("ownerName", ownerName);
+    formData.append("ownerPhone", ownerPhone);
+    formData.append("rc", rcFile);
+    formData.append("adhar", adharFile);
+
     const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/add`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        vehicleNumber,
-        ownerName,
-        ownerPhone,
-      }),
+      body: formData,
     });
+
     const data = await response.json();
     alert(data.message);
     if (response.ok) {
+      setVehicleNumber("");
+      setOwnerName("");
+      setOwnerPhone("");
+      setRcFile(null);
+      setAdharFile(null);
       fetchVehicles();
       fetchStats();
     }
@@ -172,6 +187,26 @@ function Dashboard() {
         value={ownerPhone}
         onChange={(e) => setOwnerPhone(e.target.value)}
       />
+      <div>
+        <label>
+          RC Document:
+          <input
+            type="file"
+            accept=".pdf,image/*"
+            onChange={(e) => setRcFile(e.target.files[0])}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          Aadhar Document:
+          <input
+            type="file"
+            accept=".pdf,image/*"
+            onChange={(e) => setAdharFile(e.target.files[0])}
+          />
+        </label>
+      </div>
       <button onClick={handleAddVehicle}>Add Vehicle</button>
 
       <hr />
@@ -183,6 +218,19 @@ function Dashboard() {
           <p>
             <strong>Number:</strong> {v.vehicle_number}
           </p>
+          <p>
+            <strong>Verified:</strong> {v.is_verified ? "Yes" : "No (pending admin approval)"}
+          </p>
+          {v.rc_url && (
+            <p>
+              RC: <a href={v.rc_url} target="_blank" rel="noopener noreferrer">View</a>
+            </p>
+          )}
+          {v.adhar_url && (
+            <p>
+              Aadhar: <a href={v.adhar_url} target="_blank" rel="noopener noreferrer">View</a>
+            </p>
+          )}
           {v.qr && (
             <div>
               <img src={v.qr} alt="QR" width={200} />
