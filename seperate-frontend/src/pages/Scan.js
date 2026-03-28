@@ -37,23 +37,12 @@ function Scan() {
     fetchVehicle();
   }, [vehicleNumber]);
 
-  const startCall = async () => {
-    try {
-      // Set the TwiML URL for the Twilio number
-      await fetch(`${process.env.REACT_APP_API_URL}/vehicles/set-twiml`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ vehicleNumber }),
-      });
-
-      // Open the dial pad
-      window.location.href = `tel:+13502206189`; // Replace with your Twilio number
-
-    } catch (error) {
-      console.error("Error initiating call:", error);
+  const startCall = (phoneNumber) => {
+    if (!phoneNumber) {
+      return;
     }
+
+    window.location.href = `tel:${phoneNumber}`;
   };
 
   return (
@@ -65,14 +54,26 @@ function Scan() {
       {owner && (
         <div>
           <p><strong>Name:</strong> {owner.ownerName}</p>
-          <p><strong>Contact:</strong> {owner.phone}</p>
+          <p><strong>Owner Contact:</strong> {owner.phone}</p>
 
           <button
-            onClick={startCall}
-            style={{ marginTop: "10px" }}
+            onClick={() => startCall(owner.ownerPhone)}
+            style={{ marginTop: "10px", display: "block", marginBottom: "10px" }}
           >
-          📞 Call Owner
+            📞 Parking issues - Call Owner
           </button>
+
+          <button
+            onClick={() => startCall(owner.emergencyContact)}
+            disabled={!owner.emergencyContact}
+            style={{ marginBottom: "10px" }}
+          >
+            🚑 Medical Emergency - Call Emergency Contact
+          </button>
+
+          {owner.emergencyContact && (
+            <p><strong>Emergency Contact:</strong> {owner.emergencyContact}</p>
+          )}
         </div>
       )}
     </div>

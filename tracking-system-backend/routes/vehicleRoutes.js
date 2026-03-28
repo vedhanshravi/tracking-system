@@ -76,6 +76,8 @@ router.post("/scan", async (req, res) => {
     res.json({
       ownerName: vehicle.owner_name,
       phone: maskedPhone,
+      ownerPhone: vehicle.owner_phone,
+      emergencyContact: vehicle.emergency_contact,
     });
 
     // 🔔 Send SMS via Twilio asynchronously (doesn't block the response)
@@ -109,12 +111,12 @@ const verifyToken = (req, res, next) => {
 
 // Add vehicle
 router.post("/add", verifyToken, upload.fields([{ name: "rc", maxCount: 1 }, { name: "adhar", maxCount: 1 }]), async (req, res) => {
-  const { vehicleNumber, ownerName, ownerPhone } = req.body;
+  const { vehicleNumber, ownerName, ownerPhone, emergencyContact } = req.body;
   const rcFile = req.files?.rc?.[0];
   const adharFile = req.files?.adhar?.[0];
 
-  if (!rcFile || !adharFile) {
-    return res.status(400).json({ message: "RC and Aadhar documents are required" });
+  if (!rcFile || !adharFile || !emergencyContact) {
+    return res.status(400).json({ message: "RC, Aadhar and emergency contact are required" });
   }
 
   try {
@@ -129,6 +131,7 @@ router.post("/add", verifyToken, upload.fields([{ name: "rc", maxCount: 1 }, { n
           vehicle_number,
           owner_name,
           owner_phone,
+          emergency_contact,
           rc_document,
           adhar_document,
           rc_document_name,
@@ -137,12 +140,13 @@ router.post("/add", verifyToken, upload.fields([{ name: "rc", maxCount: 1 }, { n
           adhar_document_data,
           is_verified
         )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         req.user.userId || req.user.id,
         vehicleNumber.toUpperCase(),
         ownerName,
         ownerPhone,
+        emergencyContact,
         rcFile.filename,
         adharFile.filename,
         rcFile.originalname,

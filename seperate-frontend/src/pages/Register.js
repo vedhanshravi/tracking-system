@@ -7,13 +7,14 @@ function Register() {
   const [password, setPassword] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !vehicleNumber || !ownerPhone || !rcFile || !adharFile) {
-      alert("Please fill all required fields, including vehicle and documents.");
+    if (!name || !email || !password || !vehicleNumber || !ownerPhone || !emergencyContact || !rcFile || !adharFile) {
+      alert("Please fill all required fields, including vehicle, emergency contact, and documents.");
       return;
     }
 
@@ -55,6 +56,7 @@ function Register() {
       formData.append("vehicleNumber", vehicleNumber);
       formData.append("ownerName", name);
       formData.append("ownerPhone", ownerPhone);
+      formData.append("emergencyContact", emergencyContact);
       formData.append("rc", rcFile);
       formData.append("adhar", adharFile);
 
@@ -99,6 +101,11 @@ function Register() {
         placeholder="Owner Phone"
         value={ownerPhone}
         onChange={(e) => setOwnerPhone(e.target.value)}
+      />
+      <input
+        placeholder="Emergency Contact Number"
+        value={emergencyContact}
+        onChange={(e) => setEmergencyContact(e.target.value)}
       />
       <input
         placeholder="Email"
