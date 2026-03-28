@@ -119,9 +119,25 @@ router.post("/add", verifyToken, upload.fields([{ name: "rc", maxCount: 1 }, { n
 
   try {
     console.log("/vehicles/add requested by user:", req.user);
+
+    const rcFileBuffer = fs.readFileSync(rcFile.path);
+    const adharFileBuffer = fs.readFileSync(adharFile.path);
+
     await pool.query(
-      `INSERT INTO vehicles (user_id, vehicle_number, owner_name, owner_phone, rc_document, adhar_document, is_verified)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO vehicles (
+          user_id,
+          vehicle_number,
+          owner_name,
+          owner_phone,
+          rc_document,
+          adhar_document,
+          rc_document_name,
+          adhar_document_name,
+          rc_document_data,
+          adhar_document_data,
+          is_verified
+        )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [
         req.user.userId || req.user.id,
         vehicleNumber.toUpperCase(),
@@ -129,6 +145,10 @@ router.post("/add", verifyToken, upload.fields([{ name: "rc", maxCount: 1 }, { n
         ownerPhone,
         rcFile.filename,
         adharFile.filename,
+        rcFile.originalname,
+        adharFile.originalname,
+        rcFileBuffer,
+        adharFileBuffer,
         false,
       ]
     );
