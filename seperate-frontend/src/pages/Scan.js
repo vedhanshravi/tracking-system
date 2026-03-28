@@ -74,6 +74,21 @@ function Scan() {
           {owner.emergencyContact && (
             <p><strong>Emergency Contact:</strong> {owner.emergencyContact}</p>
           )}
+
+          {owner.latitude && owner.longitude && (
+            <div style={{ marginTop: "10px" }}>
+              <p>
+                <strong>Location:</strong> {owner.latitude}, {owner.longitude}
+              </p>
+              <a
+                href={owner.mapUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open route in Maps
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>
