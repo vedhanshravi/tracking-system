@@ -174,8 +174,8 @@ exports.requestPasswordResetOtp = async (req, res) => {
 
     res.json({ message: "OTP sent to registered mobile number" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Unable to send OTP" });
+    console.error("OTP send failed:", err);
+    res.status(500).json({ message: "Unable to send OTP", error: err.message });
   }
 };
 

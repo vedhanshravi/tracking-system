@@ -20,6 +20,9 @@ function sendRequest(url) {
           data += chunk;
         });
         res.on("end", () => {
+          if (res.statusCode < 200 || res.statusCode >= 300) {
+            return reject(new Error(`MSG91 HTTP ${res.statusCode}: ${data}`));
+          }
           resolve(data);
         });
       })
@@ -53,7 +56,11 @@ async function sendSmsMessage(toPhone, message) {
   });
   const url = `https://api.msg91.com/api/sendhttp.php?${params.toString()}`;
   const response = await sendRequest(url);
-  return response;
+  const trimmed = response.trim();
+  if (!/^[a-zA-Z0-9]+$/.test(trimmed)) {
+    throw new Error(`MSG91 error: ${trimmed}`);
+  }
+  return trimmed;
 }
 
 module.exports = { sendSmsMessage };
