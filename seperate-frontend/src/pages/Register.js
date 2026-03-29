@@ -2,7 +2,17 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Register() {
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [alternatePhone, setAlternatePhone] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
@@ -13,8 +23,24 @@ function Register() {
   const navigate = useNavigate();
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !vehicleNumber || !ownerPhone || !emergencyContact || !rcFile || !adharFile) {
-      alert("Please fill all required fields, including vehicle, emergency contact, and documents.");
+    if (
+      !firstName ||
+      !lastName ||
+      !phone ||
+      !city ||
+      !state ||
+      !country ||
+      !postalCode ||
+      !addressLine1 ||
+      !email ||
+      !password ||
+      !vehicleNumber ||
+      !ownerPhone ||
+      !emergencyContact ||
+      !rcFile ||
+      !adharFile
+    ) {
+      alert("Please fill all required fields, including registration and vehicle details.");
       return;
     }
 
@@ -24,7 +50,21 @@ function Register() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          firstName,
+          middleName,
+          lastName,
+          phone,
+          alternatePhone,
+          city,
+          state,
+          country,
+          postalCode,
+          addressLine1,
+          addressLine2,
+          email,
+          password,
+        }),
       });
 
       const registerData = await registerResp.json();
@@ -53,8 +93,9 @@ function Register() {
       localStorage.setItem("token", token);
 
       const formData = new FormData();
+      const fullName = `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`.trim();
       formData.append("vehicleNumber", vehicleNumber);
-      formData.append("ownerName", name);
+      formData.append("ownerName", fullName);
       formData.append("ownerPhone", ownerPhone);
       formData.append("emergencyContact", emergencyContact);
       formData.append("rc", rcFile);
@@ -87,56 +128,124 @@ function Register() {
     <div style={{ padding: "50px" }}>
       <h2>Register</h2>
 
+      <label style={{ display: "block", margin: "10px 0 5px" }}>First Name:</label>
       <input
-        placeholder="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        placeholder="Enter first name"
+        value={firstName}
+        onChange={(e) => setFirstName(e.target.value)}
       />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Middle Name:</label>
       <input
-        placeholder="Vehicle Number"
-        value={vehicleNumber}
-        onChange={(e) => setVehicleNumber(e.target.value)}
+        placeholder="Enter middle name (optional)"
+        value={middleName}
+        onChange={(e) => setMiddleName(e.target.value)}
       />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Last Name:</label>
       <input
-        placeholder="Owner Phone"
-        value={ownerPhone}
-        onChange={(e) => setOwnerPhone(e.target.value)}
+        placeholder="Enter last name"
+        value={lastName}
+        onChange={(e) => setLastName(e.target.value)}
       />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Phone:</label>
       <input
-        placeholder="Emergency Contact Number"
-        value={emergencyContact}
-        onChange={(e) => setEmergencyContact(e.target.value)}
+        placeholder="Enter phone number"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
       />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Alternate Phone:</label>
       <input
-        placeholder="Email"
+        placeholder="Enter alternate phone (optional)"
+        value={alternatePhone}
+        onChange={(e) => setAlternatePhone(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>City:</label>
+      <input
+        placeholder="Enter city"
+        value={city}
+        onChange={(e) => setCity(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>State:</label>
+      <input
+        placeholder="Enter state"
+        value={state}
+        onChange={(e) => setState(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Country:</label>
+      <input
+        placeholder="Enter country"
+        value={country}
+        onChange={(e) => setCountry(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Postal Code:</label>
+      <input
+        placeholder="Enter postal code"
+        value={postalCode}
+        onChange={(e) => setPostalCode(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Address Line 1:</label>
+      <input
+        placeholder="Enter address line 1"
+        value={addressLine1}
+        onChange={(e) => setAddressLine1(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Address Line 2:</label>
+      <input
+        placeholder="Enter address line 2 (optional)"
+        value={addressLine2}
+        onChange={(e) => setAddressLine2(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Email:</label>
+      <input
+        placeholder="Enter email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Password:</label>
       <input
         type="password"
-        placeholder="Password"
+        placeholder="Enter password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <div>
-        <label>
+
+      <h3 style={{ marginTop: 24 }}>Vehicle Details</h3>
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Vehicle Number:</label>
+      <input
+        placeholder="Enter vehicle number"
+        value={vehicleNumber}
+        onChange={(e) => setVehicleNumber(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Owner Phone:</label>
+      <input
+        placeholder="Enter owner phone number"
+        value={ownerPhone}
+        onChange={(e) => setOwnerPhone(e.target.value)}
+      />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Emergency Contact:</label>
+      <input
+        placeholder="Enter emergency contact number"
+        value={emergencyContact}
+        onChange={(e) => setEmergencyContact(e.target.value)}
+      />
+      <div style={{ marginTop: 16 }}>
+        <label style={{ display: "block", marginBottom: 6 }}>
           RC Document:
-          <input
-            type="file"
-            accept=".pdf,image/*"
-            onChange={(e) => setRcFile(e.target.files[0])}
-          />
         </label>
+        <input
+          type="file"
+          accept=".pdf,image/*"
+          onChange={(e) => setRcFile(e.target.files[0])}
+        />
       </div>
-      <div>
-        <label>
+      <div style={{ marginTop: 16 }}>
+        <label style={{ display: "block", marginBottom: 6 }}>
           Aadhar Document:
-          <input
-            type="file"
-            accept=".pdf,image/*"
-            onChange={(e) => setAdharFile(e.target.files[0])}
-          />
         </label>
+        <input
+          type="file"
+          accept=".pdf,image/*"
+          onChange={(e) => setAdharFile(e.target.files[0])}
+        />
       </div>
       <button onClick={handleRegister}>Register</button>
       <p>

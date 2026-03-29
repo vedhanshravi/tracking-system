@@ -399,7 +399,9 @@ router.get("/stats", verifyToken, async (req, res) => {
 router.post("/verify/:vehicleId", verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    const verifierName = req.user.name || null;
+    const verifierName = [req.user.firstName, req.user.middleName, req.user.lastName]
+      .filter(Boolean)
+      .join(" ") || null;
     await pool.query(
       "UPDATE vehicles SET is_verified = true, verified_by = $2, verified_at = NOW(), verification_status = 'approved' WHERE id = $1",
       [vehicleId, verifierName]
