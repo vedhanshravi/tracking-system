@@ -86,22 +86,8 @@ function Dashboard() {
     navigate("/");
   };
 
-  const handleScan = async () => {
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/scan`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ vehicleNumber }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      setVehicleData(data);
-    } else {
-      alert(data.message);
-    }
+  const handleScan = () => {
+    navigate("/scanner");
   };
 
   const handleAddVehicle = async () => {
