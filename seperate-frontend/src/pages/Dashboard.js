@@ -170,29 +170,45 @@ function Dashboard() {
         onChange={(e) => setEmergencyContact(e.target.value)}
       />
       <div>
-        <label>
-          RC Document:
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span>
+            RC Document:
+            <span
+              style={{ marginLeft: 8, cursor: "help", fontSize: "1rem" }}
+              title="Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB."
+            >
+              ℹ️
+            </span>
+          </span>
           <input
             type="file"
-            accept=".pdf,image/*"
+            accept=".pdf,.jpg,.jpeg,.png"
             onChange={(e) => setRcFile(e.target.files[0])}
           />
         </label>
         <p style={{ fontSize: "0.9rem", color: "#555", marginTop: 4 }}>
-          Maximum file size: 5MB.
+          Supported: PDF, JPG, JPEG, PNG. Max file size: 5MB.
         </p>
       </div>
       <div>
-        <label>
-          Aadhar Document:
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span>
+            Aadhar Document:
+            <span
+              style={{ marginLeft: 8, cursor: "help", fontSize: "1rem" }}
+              title="Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB."
+            >
+              ℹ️
+            </span>
+          </span>
           <input
             type="file"
-            accept=".pdf,image/*"
+            accept=".pdf,.jpg,.jpeg,.png"
             onChange={(e) => setAdharFile(e.target.files[0])}
           />
         </label>
         <p style={{ fontSize: "0.9rem", color: "#555", marginTop: 4 }}>
-          Maximum file size: 5MB.
+          Supported: PDF, JPG, JPEG, PNG. Max file size: 5MB.
         </p>
       </div>
       <button onClick={handleAddVehicle}>Add Vehicle</button>
