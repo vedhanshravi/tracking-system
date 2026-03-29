@@ -136,6 +136,37 @@ function Dashboard() {
     }
   };
 
+  const handleDeleteVehicle = async (vehicleId) => {
+    if (!window.confirm("Delete this vehicle? This will hide it from your dashboard.")) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/vehicles/delete/${vehicleId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      alert(data.message || "Vehicle deleted");
+      if (response.ok) {
+        fetchVehicles();
+        fetchStats();
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete vehicle. Try again.");
+    }
+  };
+
   if (!user) return <p>Loading...</p>;
 
   return (
@@ -256,6 +287,12 @@ function Dashboard() {
               </div>
             </div>
           )}
+          <button
+            style={{ marginTop: 12, background: "#d9534f", color: "white", border: "none", padding: "8px 12px", cursor: "pointer" }}
+            onClick={() => handleDeleteVehicle(v.id)}
+          >
+            Delete Vehicle
+          </button>
         </div>
       ))}
 
