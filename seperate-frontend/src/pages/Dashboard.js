@@ -174,7 +174,7 @@ function Dashboard() {
           <span>
             RC Document:
             <span
-              style={{ marginLeft: 8, cursor: "help", fontSize: "1rem" }}
+              style={{ marginLeft: 8, cursor: "help", fontSize: "0.85rem", opacity: 0.7 }}
               title="Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB."
             >
               ℹ️
@@ -186,16 +186,13 @@ function Dashboard() {
             onChange={(e) => setRcFile(e.target.files[0])}
           />
         </label>
-        <p style={{ fontSize: "0.9rem", color: "#555", marginTop: 4 }}>
-          Supported: PDF, JPG, JPEG, PNG. Max file size: 5MB.
-        </p>
       </div>
       <div>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span>
             Aadhar Document:
             <span
-              style={{ marginLeft: 8, cursor: "help", fontSize: "1rem" }}
+              style={{ marginLeft: 8, cursor: "help", fontSize: "0.85rem", opacity: 0.7 }}
               title="Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB."
             >
               ℹ️
@@ -207,9 +204,6 @@ function Dashboard() {
             onChange={(e) => setAdharFile(e.target.files[0])}
           />
         </label>
-        <p style={{ fontSize: "0.9rem", color: "#555", marginTop: 4 }}>
-          Supported: PDF, JPG, JPEG, PNG. Max file size: 5MB.
-        </p>
       </div>
       <button onClick={handleAddVehicle}>Add Vehicle</button>
 
