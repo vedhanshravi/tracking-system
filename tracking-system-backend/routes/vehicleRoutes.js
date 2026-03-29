@@ -137,7 +137,32 @@ const verifyAdmin = (req, res, next) => {
   next();
 };
 
-router.post("/add", verifyToken, (req, res, next) => {
+router.post("/add", verifyToken, async (req, res, next) => {
+  try {
+    const userId = req.user.userId || req.user.id;
+    const userResult = await pool.query(
+      "SELECT subscription_tier FROM users WHERE id = $1",
+      [userId]
+    );
+    const subscriptionTier = userResult.rows[0]?.subscription_tier || 1;
+    const vehicleLimit = subscriptionTier === 2 ? 5 : 2;
+
+    const countResult = await pool.query(
+      "SELECT COUNT(*) AS total FROM vehicles WHERE user_id = $1",
+      [userId]
+    );
+    const existingVehicles = parseInt(countResult.rows[0].total, 10);
+
+    if (existingVehicles >= vehicleLimit) {
+      return res.status(400).json({ message: "You reached maximum number of vehicles limit, Please contact customer Support" });
+    }
+
+    next();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+}, (req, res, next) => {
   uploadFields(req, res, (err) => {
     if (err) {
       if (err.code === "LIMIT_FILE_SIZE") {
