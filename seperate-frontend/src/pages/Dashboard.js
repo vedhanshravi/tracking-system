@@ -96,6 +96,12 @@ function Dashboard() {
       return;
     }
 
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    if (rcFile.size > maxFileSize || adharFile.size > maxFileSize) {
+      alert("RC and Aadhar documents must be 5MB or smaller.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("vehicleNumber", vehicleNumber);
     formData.append("ownerName", ownerName);

@@ -11,6 +11,8 @@ const { sendSmsMessage, client } = require("../utils/twilioCall");
 const uploadDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
   filename: (req, file, cb) => {
@@ -20,7 +22,8 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage, limits: { fileSize: MAX_FILE_SIZE } });
+const uploadFields = upload.fields([{ name: "rc", maxCount: 1 }, { name: "adhar", maxCount: 1 }]);
 
 // Global variable to store the current vehicle number for incoming calls
 global.currentVehicleCall = null;
@@ -134,14 +137,27 @@ const verifyAdmin = (req, res, next) => {
   next();
 };
 
-// Add vehicle
-router.post("/add", verifyToken, upload.fields([{ name: "rc", maxCount: 1 }, { name: "adhar", maxCount: 1 }]), async (req, res) => {
+router.post("/add", verifyToken, (req, res, next) => {
+  uploadFields(req, res, (err) => {
+    if (err) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        return res.status(400).json({ message: "RC and Aadhar documents must be 5MB or smaller" });
+      }
+      return res.status(400).json({ message: err.message || "File upload failed" });
+    }
+    next();
+  });
+}, async (req, res) => {
   const { vehicleNumber, ownerName, ownerPhone, emergencyContact } = req.body;
   const rcFile = req.files?.rc?.[0];
   const adharFile = req.files?.adhar?.[0];
 
-  if (!rcFile || !adharFile || !emergencyContact) {
-    return res.status(400).json({ message: "RC, Aadhar and emergency contact are required" });
+  if (!vehicleNumber || !ownerName || !ownerPhone || !emergencyContact || !rcFile || !adharFile) {
+    return res.status(400).json({ message: "All vehicle fields, emergency contact, RC and Aadhar are required" });
+  }
+
+  if (rcFile.size > MAX_FILE_SIZE || adharFile.size > MAX_FILE_SIZE) {
+    return res.status(400).json({ message: "RC and Aadhar documents must be 5MB or smaller" });
   }
 
   try {
