@@ -6,12 +6,17 @@ function Admin() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [vehicleNumberSearch, setVehicleNumberSearch] = useState("");
+  const [isSearchActive, setIsSearchActive] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  const fetchPendingVehicles = useCallback(async (pageNumber = 1) => {
+  const fetchPendingVehicles = useCallback(async (pageNumber = 1, searchText = "") => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/pending?page=${pageNumber}`, {
+      const query = searchText
+        ? `vehicleNumber=${encodeURIComponent(searchText)}`
+        : `page=${pageNumber}`;
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/pending?${query}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -19,6 +24,7 @@ function Admin() {
       if (!response.ok) {
         const data = await response.json();
         setError(data.message || "Failed to load pending vehicles");
+        setPendingVehicles([]);
         return;
       }
       const result = await response.json();
@@ -28,6 +34,7 @@ function Admin() {
       setError("");
     } catch (err) {
       setError("Server error while loading pending vehicles");
+      setPendingVehicles([]);
     }
   }, [token]);
 
@@ -38,6 +45,22 @@ function Admin() {
     }
     fetchPendingVehicles();
   }, [navigate, token, fetchPendingVehicles]);
+
+  const handleSearch = async () => {
+    if (!vehicleNumberSearch.trim()) {
+      setIsSearchActive(false);
+      fetchPendingVehicles(1, "");
+      return;
+    }
+    setIsSearchActive(true);
+    fetchPendingVehicles(1, vehicleNumberSearch.trim());
+  };
+
+  const clearSearch = () => {
+    setVehicleNumberSearch("");
+    setIsSearchActive(false);
+    fetchPendingVehicles(1, "");
+  };
 
   const handleVerify = async (vehicleId) => {
     try {
@@ -96,26 +119,44 @@ function Admin() {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <div style={{ marginBottom: "12px" }}>
-        <button
-          type="button"
-          onClick={() => fetchPendingVehicles(Math.max(page - 1, 1))}
-          disabled={page <= 1}
-          style={{ marginRight: "8px" }}
-        >
-          Previous
+      <div style={{ marginBottom: "16px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder="Search by vehicle number"
+          value={vehicleNumberSearch}
+          onChange={(e) => setVehicleNumberSearch(e.target.value)}
+          style={{ padding: "8px", minWidth: "240px" }}
+        />
+        <button type="button" onClick={handleSearch} style={{ padding: "8px 16px" }}>
+          Search
         </button>
-        <button
-          type="button"
-          onClick={() => fetchPendingVehicles(Math.min(page + 1, totalPages))}
-          disabled={page >= totalPages}
-        >
-          Next
+        <button type="button" onClick={clearSearch} style={{ padding: "8px 16px" }}>
+          Clear
         </button>
-        <span style={{ marginLeft: "16px" }}>
-          Page {page} of {totalPages}
-        </span>
       </div>
+
+      {!isSearchActive && (
+        <div style={{ marginBottom: "12px" }}>
+          <button
+            type="button"
+            onClick={() => fetchPendingVehicles(Math.max(page - 1, 1), "")}
+            disabled={page <= 1}
+            style={{ marginRight: "8px" }}
+          >
+            Previous
+          </button>
+          <button
+            type="button"
+            onClick={() => fetchPendingVehicles(Math.min(page + 1, totalPages), "")}
+            disabled={page >= totalPages}
+          >
+            Next
+          </button>
+          <span style={{ marginLeft: "16px" }}>
+            Page {page} of {totalPages}
+          </span>
+        </div>
+      )}
 
       {pendingVehicles.length === 0 ? (
         <p>No vehicles pending verification.</p>
@@ -128,6 +169,9 @@ function Admin() {
             <p><strong>Emergency Contact:</strong> {vehicle.emergency_contact || "N/A"}</p>
             <p><strong>Uploaded RC:</strong> {vehicle.rc_document_name || vehicle.rc_document}</p>
             <p><strong>Uploaded Aadhar:</strong> {vehicle.adhar_document_name || vehicle.adhar_document}</p>
+            <p><strong>Verification Status:</strong> {vehicle.verification_status || (vehicle.is_verified ? "approved" : "pending")}</p>
+            <p><strong>Verified By:</strong> {vehicle.verified_by || "N/A"}</p>
+            <p><strong>Verified At:</strong> {vehicle.verified_at ? new Date(vehicle.verified_at).toLocaleString() : "N/A"}</p>
 
             <p>
               RC: <button type="button" onClick={() => viewDocument(vehicle.id, "rc")}>View</button>
@@ -136,7 +180,9 @@ function Admin() {
               Aadhar: <button type="button" onClick={() => viewDocument(vehicle.id, "adhar")}>View</button>
             </p>
 
-            <button onClick={() => handleVerify(vehicle.id)}>Mark as Verified</button>
+            {!vehicle.is_verified && (
+              <button onClick={() => handleVerify(vehicle.id)}>Mark as Verified</button>
+            )}
           </div>
         ))
       )}
