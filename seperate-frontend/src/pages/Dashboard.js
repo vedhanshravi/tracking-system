@@ -178,6 +178,9 @@ function Dashboard() {
             onChange={(e) => setRcFile(e.target.files[0])}
           />
         </label>
+        <p style={{ fontSize: "0.9rem", color: "#555", marginTop: 4 }}>
+          Maximum file size: 5MB.
+        </p>
       </div>
       <div>
         <label>
@@ -188,6 +191,10 @@ function Dashboard() {
             onChange={(e) => setAdharFile(e.target.files[0])}
           />
         </label>
+        <p style={{ fontSize: "0.9rem", color: "#555", marginTop: 4 }}>
+          Maximum file size: 5MB.
+        </p>
+      </div>
       </div>
       <button onClick={handleAddVehicle}>Add Vehicle</button>
 
