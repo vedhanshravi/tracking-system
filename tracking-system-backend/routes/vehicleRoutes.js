@@ -3,6 +3,17 @@ const router = express.Router();
 const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+
+async function ensureSoftDeleteColumn() {
+  try {
+    await pool.query("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE");
+    await pool.query("UPDATE vehicles SET is_deleted = FALSE WHERE is_deleted IS NULL");
+  } catch (err) {
+    console.error("Failed to ensure is_deleted column:", err);
+  }
+}
+
+ensureSoftDeleteColumn();
 const path = require("path");
 const fs = require("fs");
 const { sendSmsMessage, client } = require("../utils/twilioCall");
@@ -37,7 +48,7 @@ router.post("/scan", async (req, res) => {
       SELECT v.*, u.email 
       FROM vehicles v
       JOIN users u ON v.user_id = u.id
-      WHERE UPPER(v.vehicle_number) = UPPER($1)
+      WHERE UPPER(v.vehicle_number) = UPPER($1) AND COALESCE(v.is_deleted, false) = false
       `,
       [vehicleNumber]
     );
@@ -148,7 +159,7 @@ router.post("/add", verifyToken, async (req, res, next) => {
     const vehicleLimit = subscriptionTier === 2 ? 5 : 2;
 
     const countResult = await pool.query(
-      "SELECT COUNT(*) AS total FROM vehicles WHERE user_id = $1",
+      "SELECT COUNT(*) AS total FROM vehicles WHERE user_id = $1 AND COALESCE(is_deleted, false) = false",
       [userId]
     );
     const existingVehicles = parseInt(countResult.rows[0].total, 10);
@@ -204,9 +215,10 @@ router.post("/add", verifyToken, async (req, res, next) => {
           adhar_document_name,
           rc_document_data,
           adhar_document_data,
-          is_verified
+          is_verified,
+          is_deleted
         )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         req.user.userId || req.user.id,
         vehicleNumber.toUpperCase(),
@@ -219,6 +231,7 @@ router.post("/add", verifyToken, async (req, res, next) => {
         adharFile.originalname,
         rcFileBuffer,
         adharFileBuffer,
+        false,
         false,
       ]
     );
@@ -238,7 +251,7 @@ router.get("/my", verifyToken, async (req, res) => {
   try {
     console.log("/vehicles/my requested by user:", req.user);
     const result = await pool.query(
-      "SELECT * FROM vehicles WHERE user_id = $1",
+      "SELECT * FROM vehicles WHERE user_id = $1 AND COALESCE(is_deleted, false) = false",
       [req.user.userId || req.user.id]
     );
 
@@ -267,6 +280,35 @@ router.get("/my", verifyToken, async (req, res) => {
   }
 });
 
+// Soft delete a vehicle for the logged-in user
+router.patch("/delete/:vehicleId", verifyToken, async (req, res) => {
+  try {
+    const { vehicleId } = req.params;
+    const result = await pool.query(
+      "SELECT user_id FROM vehicles WHERE id = $1 AND COALESCE(is_deleted, false) = false",
+      [vehicleId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Vehicle not found" });
+    }
+
+    if (result.rows[0].user_id !== (req.user.userId || req.user.id)) {
+      return res.status(403).json({ message: "Not authorized to delete this vehicle" });
+    }
+
+    await pool.query(
+      "UPDATE vehicles SET is_deleted = true WHERE id = $1",
+      [vehicleId]
+    );
+
+    res.json({ message: "Vehicle deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Admin: list pending vehicles or lookup a specific vehicle by number
 router.get("/pending", verifyToken, verifyAdmin, async (req, res) => {
   try {
@@ -274,7 +316,7 @@ router.get("/pending", verifyToken, verifyAdmin, async (req, res) => {
 
     if (vehicleNumber) {
       const result = await pool.query(
-        "SELECT * FROM vehicles WHERE UPPER(vehicle_number) = UPPER($1) ORDER BY id ASC",
+        "SELECT * FROM vehicles WHERE UPPER(vehicle_number) = UPPER($1) AND COALESCE(is_deleted, false) = false ORDER BY id ASC",
         [vehicleNumber]
       );
 
@@ -292,13 +334,13 @@ router.get("/pending", verifyToken, verifyAdmin, async (req, res) => {
     const offset = (page - 1) * pageSize;
 
     const countResult = await pool.query(
-      "SELECT COUNT(*) AS total FROM vehicles WHERE is_verified = false"
+      "SELECT COUNT(*) AS total FROM vehicles WHERE is_verified = false AND COALESCE(is_deleted, false) = false"
     );
     const total = parseInt(countResult.rows[0].total, 10);
     const totalPages = Math.ceil(total / pageSize);
 
     const result = await pool.query(
-      "SELECT * FROM vehicles WHERE is_verified = false ORDER BY id ASC LIMIT $1 OFFSET $2",
+      "SELECT * FROM vehicles WHERE is_verified = false AND COALESCE(is_deleted, false) = false ORDER BY id ASC LIMIT $1 OFFSET $2",
       [pageSize, offset]
     );
 
@@ -380,7 +422,7 @@ router.get("/stats", verifyToken, async (req, res) => {
         MAX(s.scanned_at) AS last_scanned
       FROM vehicles v
       LEFT JOIN scans s ON v.id = s.vehicle_id
-      WHERE v.user_id = $1
+      WHERE v.user_id = $1 AND COALESCE(v.is_deleted, false) = false
       GROUP BY v.id
       `,
       [req.user.userId || req.user.id]
@@ -421,7 +463,7 @@ router.get("/call/:vehicleNumber", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
+      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1 AND COALESCE(is_deleted, false) = false",
       [vehicleNumber]
     );
 
@@ -454,7 +496,7 @@ router.post("/connect", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
+      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1 AND COALESCE(is_deleted, false) = false",
       [vehicleNumber]
     );
 
@@ -512,7 +554,7 @@ router.get("/incoming-call", async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT owner_phone, emergency_contact FROM vehicles WHERE vehicle_number = $1",
+      "SELECT owner_phone, emergency_contact FROM vehicles WHERE vehicle_number = $1 AND COALESCE(is_deleted, false) = false",
       [vehicleNumber]
     );
 
