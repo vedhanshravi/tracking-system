@@ -1,8 +1,9 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 function Scan() {
   const { vehicleNumber } = useParams();
+  const navigate = useNavigate();
   const [owner, setOwner] = useState(null);
   const [error, setError] = useState("");
 
@@ -37,12 +38,9 @@ function Scan() {
     fetchVehicle();
   }, [vehicleNumber]);
 
-  const startCall = (phoneNumber) => {
-    if (!phoneNumber) {
-      return;
-    }
-
-    window.location.href = `tel:${phoneNumber}`;
+  const startCall = (callType) => {
+    if (!vehicleNumber) return;
+    navigate(`/call/${vehicleNumber}?type=${callType}`);
   };
 
   const maskPhone = (phone) => {
@@ -64,14 +62,14 @@ function Scan() {
           <p><strong>Owner Contact:</strong> {owner.phone}</p>
 
           <button
-            onClick={() => startCall(owner.ownerPhone)}
+            onClick={() => startCall("owner")}
             style={{ marginTop: "10px", display: "block", marginBottom: "10px" }}
           >
             📞 Parking issues - Call Owner
           </button>
 
           <button
-            onClick={() => startCall(owner.emergencyContact)}
+            onClick={() => startCall("emergency")}
             disabled={!owner.emergencyContact}
             style={{ marginBottom: "10px" }}
           >

@@ -458,16 +458,17 @@ router.post("/connect", async (req, res) => {
   }
 });
 
-// POST /set-twiml - store vehicle number for incoming call
+// POST /set-twiml - store vehicle number and call type for incoming call
 router.post("/set-twiml", async (req, res) => {
-  const { vehicleNumber } = req.body;
+  const { vehicleNumber, callType } = req.body;
+  const type = callType === "emergency" ? "emergency" : "owner";
 
   try {
-    // Store the current vehicle number globally
-    global.currentVehicleCall = vehicleNumber;
-    
-    console.log(`Set current vehicle call to: ${vehicleNumber}`);
-    res.json({ message: "Vehicle call set", vehicleNumber });
+    // Store the current call context globally
+    global.currentVehicleCall = { vehicleNumber, callType: type };
+
+    console.log(`Set current vehicle call to: ${vehicleNumber} (${type})`);
+    res.json({ message: "Vehicle call set", vehicleNumber, callType: type });
 
   } catch (err) {
     console.error(err);
@@ -478,7 +479,9 @@ router.post("/set-twiml", async (req, res) => {
 // GET /incoming-call - Twilio webhook for incoming calls
 router.get("/incoming-call", async (req, res) => {
   try {
-    const vehicleNumber = global.currentVehicleCall;
+    const callContext = global.currentVehicleCall;
+    const vehicleNumber = callContext?.vehicleNumber;
+    const callType = callContext?.callType || "owner";
 
     if (!vehicleNumber) {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -490,7 +493,7 @@ router.get("/incoming-call", async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1",
+      "SELECT owner_phone, emergency_contact FROM vehicles WHERE vehicle_number = $1",
       [vehicleNumber]
     );
 
@@ -503,13 +506,22 @@ router.get("/incoming-call", async (req, res) => {
       return res.send(twiml);
     }
 
-    const ownerPhone = result.rows[0].owner_phone;
+    const row = result.rows[0];
+    const targetPhone = callType === "emergency" ? row.emergency_contact : row.owner_phone;
 
-    // Return TwiML to dial the owner
+    if (!targetPhone) {
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>Phone number not found for this contact</Say>
+</Response>`;
+      res.type('text/xml');
+      return res.send(twiml);
+    }
+
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial callerId="${process.env.TWILIO_PHONE_NUMBER}">
-    ${ownerPhone}
+    ${targetPhone}
   </Dial>
 </Response>`;
 
