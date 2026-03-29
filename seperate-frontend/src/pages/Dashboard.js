@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [vehicleNumber, setVehicleNumber] = useState("");
-  const [vehicleData, setVehicleData] = useState(null);
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
@@ -139,24 +138,7 @@ function Dashboard() {
 
       <h3>Scan Vehicle</h3>
 
-      <input
-        placeholder="Enter Vehicle Number"
-        value={vehicleNumber}
-        onChange={(e) => setVehicleNumber(e.target.value)}
-      />
-
       <button onClick={handleScan}>Scan</button>
-
-      {vehicleData && (
-        <div>
-          <p>
-            <strong>Owner:</strong> {vehicleData.ownerName}
-          </p>
-          <p>
-            <strong>Phone:</strong> {vehicleData.phone}
-          </p>
-        </div>
-      )}
 
       <hr />
 
