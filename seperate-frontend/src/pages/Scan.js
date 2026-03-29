@@ -45,6 +45,13 @@ function Scan() {
     window.location.href = `tel:${phoneNumber}`;
   };
 
+  const maskPhone = (phone) => {
+    if (!phone) return "";
+    const digits = phone.replace(/\D/g, "");
+    const visible = digits.slice(-3);
+    return digits.length > 3 ? `XXXXXXX${visible}` : phone;
+  };
+
   return (
     <div style={{ padding: "50px" }}>
       <h2>Vehicle Information</h2>
@@ -72,7 +79,7 @@ function Scan() {
           </button>
 
           {owner.emergencyContact && (
-            <p><strong>Emergency Contact:</strong> {owner.emergencyContact}</p>
+            <p><strong>Emergency Contact:</strong> {maskPhone(owner.emergencyContact)}</p>
           )}
 
           {owner.latitude && owner.longitude && (
