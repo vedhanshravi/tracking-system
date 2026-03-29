@@ -146,7 +146,7 @@ exports.requestPasswordResetOtp = async (req, res) => {
     }
 
     const userResult = await pool.query(
-      "SELECT id FROM users WHERE phone = $1",
+      "SELECT id, phone FROM users WHERE phone = $1",
       [phone]
     );
 
@@ -218,8 +218,8 @@ exports.resetPassword = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await pool.query(
-      "UPDATE users SET password = $1 WHERE email = $2",
-      [hashedPassword, email]
+      "UPDATE users SET password = $1 WHERE phone = $2",
+      [hashedPassword, phone]
     );
     await pool.query("DELETE FROM password_reset_otps WHERE user_id = $1", [userResult.rows[0].id]);
 
