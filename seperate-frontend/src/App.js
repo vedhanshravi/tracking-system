@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Register from "./pages/Register";
 import Scan from "./pages/Scan";
+import Scanner from "./pages/Scanner";
 import Call from "./pages/Call";
 import AdminLogin from "./pages/AdminLogin";
 import Admin from "./pages/Admin";
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/scanner" element={<Scanner />} />
         <Route path="/scan/:vehicleNumber" element={<Scan />} />
         <Route path="/call/:vehicleNumber" element={<Call />} />
         <Route path="/admin-login" element={<AdminLogin />} />

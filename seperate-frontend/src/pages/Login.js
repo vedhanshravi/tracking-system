@@ -46,7 +46,7 @@ function Login() {
         <button onClick={() => navigate("/register")}>Register</button>
       </p>
       <p style={{ marginTop: 12 }}>
-        <button onClick={() => navigate("/scan")}>Vehicle Scanner</button>
+        <button onClick={() => navigate("/scanner")}>Vehicle Scanner</button>
       </p>
       <p style={{ marginTop: 12 }}>
         <button onClick={() => navigate("/admin-login")}>Executive Login</button>
