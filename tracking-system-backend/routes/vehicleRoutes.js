@@ -267,11 +267,28 @@ router.get("/my", verifyToken, async (req, res) => {
   }
 });
 
-// Admin: list vehicles awaiting verification with pagination
+// Admin: list pending vehicles or lookup a specific vehicle by number
 router.get("/pending", verifyToken, verifyAdmin, async (req, res) => {
   try {
+    const vehicleNumber = req.query.vehicleNumber?.trim();
+
+    if (vehicleNumber) {
+      const result = await pool.query(
+        "SELECT * FROM vehicles WHERE UPPER(vehicle_number) = UPPER($1) ORDER BY id ASC",
+        [vehicleNumber]
+      );
+
+      return res.json({
+        data: result.rows,
+        page: 1,
+        pageSize: result.rows.length,
+        total: result.rows.length,
+        totalPages: 1,
+      });
+    }
+
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const pageSize = 5;
+    const pageSize = 10;
     const offset = (page - 1) * pageSize;
 
     const countResult = await pool.query(
@@ -382,7 +399,9 @@ router.get("/stats", verifyToken, async (req, res) => {
 router.post("/verify/:vehicleId", verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    const verifierName = req.user.name || null;
+    const verifierName = [req.user.firstName, req.user.middleName, req.user.lastName]
+      .filter(Boolean)
+      .join(" ") || null;
     await pool.query(
       "UPDATE vehicles SET is_verified = true, verified_by = $2, verified_at = NOW(), verification_status = 'approved' WHERE id = $1",
       [vehicleId, verifierName]

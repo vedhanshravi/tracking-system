@@ -4,6 +4,10 @@ import { useNavigate } from "react-router-dom";
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [vehicleNumber, setVehicleNumber] = useState("");
+
+  const getUserFullName = user
+    ? `${user.first_name || ""}${user.middle_name ? ` ${user.middle_name}` : ""}${user.last_name ? ` ${user.last_name}` : ""}`.trim()
+    : "";
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
@@ -136,8 +140,21 @@ function Dashboard() {
 
   return (
     <div style={{ padding: "50px" }}>
-      <h2>Welcome, {user.name}!</h2>
-      <p>Email: {user.email}</p>
+      <h2>Welcome, {getUserFullName || "User"}!</h2>
+      <div style={{ marginBottom: 20 }}>
+        <p><strong>First Name:</strong> {user.first_name || "-"}</p>
+        <p><strong>Middle Name:</strong> {user.middle_name || "-"}</p>
+        <p><strong>Last Name:</strong> {user.last_name || "-"}</p>
+        <p><strong>Email:</strong> {user.email || "-"}</p>
+        <p><strong>Phone:</strong> {user.phone || "-"}</p>
+        <p><strong>Alternate Phone:</strong> {user.alternate_phone || "-"}</p>
+        <p><strong>Address Line 1:</strong> {user.address_line1 || "-"}</p>
+        <p><strong>Address Line 2:</strong> {user.address_line2 || "-"}</p>
+        <p><strong>City:</strong> {user.city || "-"}</p>
+        <p><strong>State:</strong> {user.state || "-"}</p>
+        <p><strong>Country:</strong> {user.country || "-"}</p>
+        <p><strong>Postal Code:</strong> {user.postal_code || "-"}</p>
+      </div>
 
       <button onClick={handleLogout}>Logout</button>
       <hr />

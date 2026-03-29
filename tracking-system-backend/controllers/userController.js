@@ -3,11 +3,74 @@ const bcrypt = require("bcrypt");
  
 exports.createUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      firstName,
+      middleName,
+      lastName,
+      phone,
+      alternatePhone,
+      city,
+      state,
+      country,
+      postalCode,
+      addressLine1,
+      addressLine2,
+      email,
+      password,
+    } = req.body;
+
+    if (
+      !firstName ||
+      !lastName ||
+      !phone ||
+      !city ||
+      !state ||
+      !country ||
+      !postalCode ||
+      !addressLine1 ||
+      !email ||
+      !password
+    ) {
+      return res.status(400).json({ message: "Missing required registration fields" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
+    const fullName = `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`.trim();
+
     const result = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
-      [name, email, hashedPassword]
+      `INSERT INTO users (
+          name,
+          first_name,
+          middle_name,
+          last_name,
+          phone,
+          alternate_phone,
+          city,
+          state,
+          country,
+          postal_code,
+          address_line1,
+          address_line2,
+          email,
+          password
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+        RETURNING id, email, first_name, middle_name, last_name`,
+      [
+        fullName,
+        firstName,
+        middleName || null,
+        lastName,
+        phone,
+        alternatePhone || null,
+        city,
+        state,
+        country,
+        postalCode,
+        addressLine1,
+        addressLine2 || null,
+        email,
+        hashedPassword,
+      ]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -33,7 +96,13 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
     const token = jwt.sign(
-      { userId: user.id, name: user.name, role: user.role || "user" },
+      {
+        userId: user.id,
+        firstName: user.first_name,
+        middleName: user.middle_name || null,
+        lastName: user.last_name,
+        role: user.role || "user",
+      },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
@@ -49,7 +118,7 @@ exports.getCurrentUser = async (req, res) => {
     const userId = req.user.userId;
  
     const result = await pool.query(
-      "SELECT id, name, email, created_at, role FROM users WHERE id = $1",
+      "SELECT id, email, first_name, middle_name, last_name, phone, alternate_phone, city, state, country, postal_code, address_line1, address_line2, created_at, role FROM users WHERE id = $1",
       [userId]
     );
  
@@ -57,7 +126,9 @@ exports.getCurrentUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
  
-    res.json(result.rows[0]);
+    const user = result.rows[0];
+    user.fullName = [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(" ");
+    res.json(user);
   } catch (err) {
     console.error(err);
     res.status(500).send("Failed to fetch user");
