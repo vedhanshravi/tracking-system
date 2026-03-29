@@ -195,7 +195,6 @@ function Dashboard() {
           Maximum file size: 5MB.
         </p>
       </div>
-      </div>
       <button onClick={handleAddVehicle}>Add Vehicle</button>
 
       <hr />
