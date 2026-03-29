@@ -60,6 +60,9 @@ function AdminLogin() {
       <br />
       <button onClick={handleLogin}>Login as Executive</button>
       <p style={{ marginTop: 12 }}>
+        <button onClick={() => navigate("/reset")}>Forgot Password?</button>
+      </p>
+      <p style={{ marginTop: 12 }}>
         <button onClick={() => navigate("/")}>Back to User Login</button>
       </p>
     </div>

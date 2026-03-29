@@ -46,6 +46,9 @@ function Login() {
         <button onClick={() => navigate("/register")}>Register</button>
       </p>
       <p style={{ marginTop: 12 }}>
+        <button onClick={() => navigate("/reset")}>Forgot Password?</button>
+      </p>
+      <p style={{ marginTop: 12 }}>
         <button onClick={() => navigate("/scanner")}>Vehicle Scanner</button>
       </p>
       <p style={{ marginTop: 12 }}>
