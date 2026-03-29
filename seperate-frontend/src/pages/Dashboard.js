@@ -96,6 +96,12 @@ function Dashboard() {
       return;
     }
 
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    if (rcFile.size > maxFileSize || adharFile.size > maxFileSize) {
+      alert("RC and Aadhar documents must be 5MB or smaller.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("vehicleNumber", vehicleNumber);
     formData.append("ownerName", ownerName);
@@ -172,6 +178,9 @@ function Dashboard() {
             onChange={(e) => setRcFile(e.target.files[0])}
           />
         </label>
+        <p style={{ fontSize: "0.9rem", color: "#555", marginTop: 4 }}>
+          Maximum file size: 5MB.
+        </p>
       </div>
       <div>
         <label>
@@ -182,6 +191,9 @@ function Dashboard() {
             onChange={(e) => setAdharFile(e.target.files[0])}
           />
         </label>
+        <p style={{ fontSize: "0.9rem", color: "#555", marginTop: 4 }}>
+          Maximum file size: 5MB.
+        </p>
       </div>
       <button onClick={handleAddVehicle}>Add Vehicle</button>
 
