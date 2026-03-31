@@ -15,6 +15,7 @@ function Dashboard() {
   const [stats, setStats] = useState([]);
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
+  const [activeTab, setActiveTab] = useState("profile");
   const navigate = useNavigate();
 
   const fetchVehicles = async () => {
@@ -169,10 +170,43 @@ function Dashboard() {
 
   if (!user) return <p>Loading...</p>;
 
+  const tabs = [
+    { id: "profile", label: "Profile" },
+    { id: "scan", label: "Scan Vehicle" },
+    { id: "add", label: "Add Vehicle" },
+    { id: "myvehicles", label: "My Vehicles" },
+    { id: "analytics", label: "Scan Analytics" },
+  ];
+
+  const tabButtonStyle = (tabId) => ({
+    padding: "10px 16px",
+    border: "1px solid #ccc",
+    background: activeTab === tabId ? "#007bff" : "white",
+    color: activeTab === tabId ? "white" : "black",
+    cursor: "pointer",
+    borderRadius: 4,
+    marginRight: 8,
+    marginBottom: 16,
+  });
+
   return (
     <div style={{ padding: "50px" }}>
       <h2>Welcome, {getUserFullName || "User"}!</h2>
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ margin: "20px 0" }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            style={tabButtonStyle(tab.id)}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      {activeTab === "profile" && (
+        <>
+          <div style={{ marginBottom: 20 }}>
         <p><strong>First Name:</strong> {user.first_name || "-"}</p>
         <p><strong>Middle Name:</strong> {user.middle_name || "-"}</p>
         <p><strong>Last Name:</strong> {user.last_name || "-"}</p>
@@ -187,23 +221,26 @@ function Dashboard() {
         <p><strong>State:</strong> {user.state || "-"}</p>
         <p><strong>Country:</strong> {user.country || "-"}</p>
         <p><strong>Postal Code:</strong> {user.postal_code || "-"}</p>
-      </div>
+          <button onClick={handleLogout}>Logout</button>
+        </div>
+      </>
+      )}
 
-      <button onClick={handleLogout}>Logout</button>
-      <hr />
+      {activeTab === "scan" && (
+        <div>
+          <h3>Scan Vehicle</h3>
+      <button onClick={handleScan}>Open QR Scanner</button>
+        </div>
+      )}
 
-      <h3>Scan Vehicle</h3>
-
-      <button onClick={handleScan}>Scan</button>
-
-      <hr />
-
-      <h3>Add Vehicle</h3>
-      <input
-        placeholder="Vehicle Number"
-        value={vehicleNumber}
-        onChange={(e) => setVehicleNumber(e.target.value)}
-      />
+      {activeTab === "add" && (
+        <div>
+          <h3>Add Vehicle</h3>
+          <input
+            placeholder="Vehicle Number"
+            value={vehicleNumber}
+            onChange={(e) => setVehicleNumber(e.target.value)}
+          />
       <input
         placeholder="Owner Name"
         value={ownerName}
@@ -256,10 +293,12 @@ function Dashboard() {
         </label>
       </div>
       <button onClick={handleAddVehicle}>Add Vehicle</button>
+        </div>
+      )}
 
-      <hr />
-
-      <h3>My Vehicles</h3>
+      {activeTab === "myvehicles" && (
+        <div>
+          <h3>My Vehicles</h3>
       {vehicles.length === 0 && <p>No vehicles added yet.</p>}
       {vehicles.map((v) => (
         <div key={v.id} style={{ marginBottom: "20px" }}>
@@ -297,10 +336,12 @@ function Dashboard() {
           </button>
         </div>
       ))}
+        </div>
+      )}
 
-      <hr />
-
-      <h3>Scan Analytics</h3>
+      {activeTab === "analytics" && (
+        <div>
+          <h3>Scan Analytics</h3>
       {stats.length === 0 && <p>No scan data yet.</p>}
       {stats.map((item) => (
         <div key={item.id} style={{ marginBottom: "15px" }}>
@@ -311,6 +352,8 @@ function Dashboard() {
           </p>
         </div>
       ))}
+        </div>
+      )}
     </div>
   );
 }
