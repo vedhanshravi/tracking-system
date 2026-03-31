@@ -363,6 +363,25 @@ function Dashboard() {
         </div>
       )}
 
+      {user.subscription_active === false && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "#ffdddd",
+            color: "#b71c1c",
+            padding: "12px 20px",
+            textAlign: "center",
+            borderTop: "1px solid #f44336",
+            zIndex: 1000,
+          }}
+        >
+          Your subscription has expired. You can still login and view your details, but owner/emergency contact features are disabled until renewal.
+        </div>
+      )}
+
       {activeTab === "analytics" && (
         <div>
           <h3>Scan Analytics</h3>
