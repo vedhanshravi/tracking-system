@@ -11,7 +11,8 @@ function Dashboard() {
   const formatDate = (value) => {
     if (!value) return "-";
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toISOString().split("T")[0];
   };
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
