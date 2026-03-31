@@ -143,6 +143,16 @@ function Dashboard() {
     }
   };
 
+  const isSubscriptionExpired = (user) => {
+    if (!user) return false;
+    if (user.subscription_active === false) return true;
+    if (user.subscription_end) {
+      const expiryDate = new Date(user.subscription_end);
+      return !Number.isNaN(expiryDate.getTime()) && expiryDate < new Date();
+    }
+    return false;
+  };
+
   const handleDeleteVehicle = async (vehicleId) => {
     if (!window.confirm("Delete this vehicle? This will hide it from your dashboard.")) {
       return;
@@ -363,7 +373,7 @@ function Dashboard() {
         </div>
       )}
 
-      {user.subscription_active === false && (
+      {isSubscriptionExpired(user) && (
         <div
           style={{
             position: "fixed",
