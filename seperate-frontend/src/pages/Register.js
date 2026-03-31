@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Register() {
@@ -15,12 +15,33 @@ function Register() {
   const [addressLine2, setAddressLine2] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [subscriptionId, setSubscriptionId] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/users/subscriptions`);
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        setSubscriptions(data);
+        if (data.length > 0) {
+          setSubscriptionId((prev) => prev || data[0].id.toString());
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchSubscriptions();
+  }, []);
 
   const handleRegister = async () => {
     if (
@@ -32,6 +53,7 @@ function Register() {
       !country ||
       !postalCode ||
       !addressLine1 ||
+      !subscriptionId ||
       !email ||
       !password ||
       !vehicleNumber ||
@@ -64,6 +86,7 @@ function Register() {
           addressLine2,
           email,
           password,
+          subscriptionId,
         }),
       });
 
@@ -207,6 +230,21 @@ function Register() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
+      <label style={{ display: "block", margin: "10px 0 5px" }}>Subscription Type:</label>
+      <select
+        value={subscriptionId}
+        onChange={(e) => setSubscriptionId(e.target.value)}
+        style={{ width: "100%", padding: 8, marginBottom: 12 }}
+      >
+        <option value="" disabled>
+          Select subscription
+        </option>
+        {subscriptions.map((sub) => (
+          <option key={sub.id} value={sub.id}>
+            {sub.name}
+          </option>
+        ))}
+      </select>
 
       <h3 style={{ marginTop: 24 }}>Vehicle Details</h3>
       <label style={{ display: "block", margin: "10px 0 5px" }}>Vehicle Number:</label>
