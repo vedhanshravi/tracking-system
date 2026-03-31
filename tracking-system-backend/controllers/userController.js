@@ -180,9 +180,6 @@ exports.loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
-    if (isSubscriptionExpired(user)) {
-      return res.status(403).json({ message: "Your subscription has expired. Please renew to continue using the service." });
-    }
     const token = jwt.sign(
       {
         userId: user.id,
