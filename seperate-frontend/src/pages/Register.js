@@ -193,7 +193,7 @@ function Register() {
 
       {step === 1 && (
         <>
-          <label style={{ display: "block", margin: "10px 0 5px" }}>First Name:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>First Name *:</label>
           <input
             placeholder="Enter first name"
             value={firstName}
@@ -205,13 +205,13 @@ function Register() {
             value={middleName}
             onChange={(e) => setMiddleName(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Last Name:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Last Name *:</label>
           <input
             placeholder="Enter last name"
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Phone:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Phone *:</label>
           <input
             placeholder="Enter phone number"
             value={phone}
@@ -223,31 +223,31 @@ function Register() {
             value={alternatePhone}
             onChange={(e) => setAlternatePhone(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>City:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>City *:</label>
           <input
             placeholder="Enter city"
             value={city}
             onChange={(e) => setCity(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>State:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>State *:</label>
           <input
             placeholder="Enter state"
             value={state}
             onChange={(e) => setState(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Country:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Country *:</label>
           <input
             placeholder="Enter country"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Postal Code:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Postal Code *:</label>
           <input
             placeholder="Enter postal code"
             value={postalCode}
             onChange={(e) => setPostalCode(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Address Line 1:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Address Line 1 *:</label>
           <input
             placeholder="Enter address line 1"
             value={addressLine1}
@@ -259,13 +259,13 @@ function Register() {
             value={addressLine2}
             onChange={(e) => setAddressLine2(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Email:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Email *:</label>
           <input
             placeholder="Enter email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Password:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Password *:</label>
           <input
             type="password"
             placeholder="Enter password"
@@ -278,19 +278,19 @@ function Register() {
       {step === 2 && (
         <>
           <h3 style={{ marginTop: 24 }}>Vehicle Details</h3>
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Vehicle Number:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Vehicle Number *:</label>
           <input
             placeholder="Enter vehicle number"
             value={vehicleNumber}
             onChange={(e) => setVehicleNumber(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Owner Phone:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Owner Phone *:</label>
           <input
             placeholder="Enter owner phone number"
             value={ownerPhone}
             onChange={(e) => setOwnerPhone(e.target.value)}
           />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Emergency Contact:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Emergency Contact *:</label>
           <input
             placeholder="Enter emergency contact number"
             value={emergencyContact}
@@ -321,7 +321,7 @@ function Register() {
 
       {step === 3 && (
         <>
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Subscription Type:</label>
+          <label style={{ display: "block", margin: "10px 0 5px" }}>Subscription Type *:</label>
           <select
             value={subscriptionId}
             onChange={(e) => setSubscriptionId(e.target.value)}
