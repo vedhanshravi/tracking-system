@@ -33,8 +33,8 @@ function Register() {
         }
         const data = await response.json();
         setSubscriptions(data);
-        if (data.length > 0 && !subscriptionId) {
-          setSubscriptionId(data[0].id.toString());
+        if (data.length > 0) {
+          setSubscriptionId((prev) => prev || data[0].id.toString());
         }
       } catch (err) {
         console.error(err);
