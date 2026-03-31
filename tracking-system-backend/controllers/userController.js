@@ -43,10 +43,14 @@ async function ensureSubscriptionTable() {
 }
 
 async function ensureUserSubscriptionColumn() {
-  if (userSubscriptionColumnReady) return;
-  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_id INTEGER REFERENCES subscriptions(id)`);
-  await pool.query(`UPDATE users SET subscription_id = 1 WHERE subscription_id IS NULL`);
+  // Subscription-related columns should be created and seeded manually via PGAdmin4.
+  // This function exists only to avoid runtime schema changes during request flow.
   userSubscriptionColumnReady = true;
+}
+
+function isSubscriptionExpired(user) {
+  if (!user || !user.subscription_end) return true;
+  return new Date(user.subscription_end) < new Date();
 }
 
 function generateOtp() {
@@ -95,6 +99,9 @@ exports.createUser = async (req, res) => {
     await ensureUserSubscriptionColumn();
 
     const selectedSubscriptionId = subscriptionId ? parseInt(subscriptionId, 10) : 1;
+    const subscriptionStart = new Date();
+    const subscriptionEnd = new Date(subscriptionStart);
+    subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
     const subscriptionCheck = await pool.query(
       "SELECT id FROM subscriptions WHERE id = $1",
       [selectedSubscriptionId]
@@ -122,9 +129,11 @@ exports.createUser = async (req, res) => {
           address_line2,
           email,
           password,
-          subscription_id
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-        RETURNING id, email, first_name, middle_name, last_name, subscription_id`,
+          subscription_id,
+          subscription_start,
+          subscription_end
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+        RETURNING id, email, first_name, middle_name, last_name, subscription_id, subscription_start, subscription_end`,
       [
         fullName,
         firstName,
@@ -141,6 +150,8 @@ exports.createUser = async (req, res) => {
         email,
         hashedPassword,
         selectedSubscriptionId,
+        subscriptionStart,
+        subscriptionEnd,
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -153,6 +164,9 @@ exports.createUser = async (req, res) => {
 const jwt = require("jsonwebtoken");
 exports.loginUser = async (req, res) => {
   try {
+    await ensureSubscriptionTable();
+    await ensureUserSubscriptionColumn();
+
     const { email, password } = req.body;
     const result = await pool.query(
       "SELECT * FROM users WHERE email = $1",
@@ -165,6 +179,9 @@ exports.loginUser = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+    if (isSubscriptionExpired(user)) {
+      return res.status(403).json({ message: "Your subscription has expired. Please renew to continue using the service." });
     }
     const token = jwt.sign(
       {
@@ -312,6 +329,8 @@ exports.getCurrentUser = async (req, res) => {
               u.address_line2,
               u.created_at,
               u.role,
+              u.subscription_start,
+              u.subscription_end,
               s.id AS subscription_id,
               s.name AS subscription_name,
               s.tier AS subscription_tier,
@@ -327,6 +346,7 @@ exports.getCurrentUser = async (req, res) => {
     }
  
     const user = result.rows[0];
+    user.subscription_active = !isSubscriptionExpired(user);
     user.fullName = [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(" ");
     res.json(user);
   } catch (err) {

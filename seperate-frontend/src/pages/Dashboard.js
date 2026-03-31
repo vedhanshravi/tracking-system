@@ -8,6 +8,11 @@ function Dashboard() {
   const getUserFullName = user
     ? `${user.first_name || ""}${user.middle_name ? ` ${user.middle_name}` : ""}${user.last_name ? ` ${user.last_name}` : ""}`.trim()
     : "";
+  const formatDate = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+  };
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
@@ -228,6 +233,8 @@ function Dashboard() {
         <p><strong>Last Name:</strong> {user.last_name || "-"}</p>
         <p><strong>Email:</strong> {user.email || "-"}</p>
         <p><strong>Subscription Type:</strong> {user.subscription_name || "-"}</p>
+        <p><strong>Subscription Start:</strong> {formatDate(user.subscription_start)}</p>
+        <p><strong>Subscription End:</strong> {formatDate(user.subscription_end)}</p>
         <p><strong>Max Vehicles:</strong> {user.max_vehicles || "-"}</p>
         <p><strong>Phone:</strong> {user.phone || "-"}</p>
         <p><strong>Alternate Phone:</strong> {user.alternate_phone || "-"}</p>

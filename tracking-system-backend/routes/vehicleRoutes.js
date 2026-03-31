@@ -45,7 +45,7 @@ router.post("/scan", async (req, res) => {
   try {
     const result = await pool.query(
       `
-      SELECT v.*, u.email 
+      SELECT v.*, u.email, u.subscription_end
       FROM vehicles v
       JOIN users u ON v.user_id = u.id
       WHERE UPPER(v.vehicle_number) = UPPER($1) AND COALESCE(v.is_deleted, false) = false
@@ -463,7 +463,10 @@ router.get("/call/:vehicleNumber", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1 AND COALESCE(is_deleted, false) = false",
+      `SELECT v.owner_phone, u.subscription_end
+       FROM vehicles v
+       JOIN users u ON v.user_id = u.id
+       WHERE v.vehicle_number = $1 AND COALESCE(v.is_deleted, false) = false`,
       [vehicleNumber]
     );
 
@@ -471,7 +474,10 @@ router.get("/call/:vehicleNumber", async (req, res) => {
       return res.status(404).send("Vehicle not found");
     }
 
-    const ownerPhone = result.rows[0].owner_phone;
+    const { owner_phone: ownerPhone, subscription_end: subscriptionEnd } = result.rows[0];
+    if (!subscriptionEnd || new Date(subscriptionEnd) < new Date()) {
+      return res.status(403).send("Owner subscription has expired. Call not allowed.");
+    }
 
     // Return TwiML to dial the owner
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -496,7 +502,10 @@ router.post("/connect", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT owner_phone FROM vehicles WHERE vehicle_number = $1 AND COALESCE(is_deleted, false) = false",
+      `SELECT v.owner_phone, u.subscription_end
+       FROM vehicles v
+       JOIN users u ON v.user_id = u.id
+       WHERE v.vehicle_number = $1 AND COALESCE(v.is_deleted, false) = false`,
       [vehicleNumber]
     );
 
@@ -504,7 +513,10 @@ router.post("/connect", async (req, res) => {
       return res.status(404).json({ message: "Vehicle not found" });
     }
 
-    const ownerPhone = result.rows[0].owner_phone;
+    const { owner_phone: ownerPhone, subscription_end: subscriptionEnd } = result.rows[0];
+    if (!subscriptionEnd || new Date(subscriptionEnd) < new Date()) {
+      return res.status(403).json({ message: "Owner subscription has expired. Connection not allowed." });
+    }
 
     const callSid = await connectScannerToOwner(scannerPhone, ownerPhone);
 
@@ -554,7 +566,10 @@ router.get("/incoming-call", async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT owner_phone, emergency_contact FROM vehicles WHERE vehicle_number = $1 AND COALESCE(is_deleted, false) = false",
+      `SELECT v.owner_phone, v.emergency_contact, u.subscription_end
+       FROM vehicles v
+       JOIN users u ON v.user_id = u.id
+       WHERE v.vehicle_number = $1 AND COALESCE(v.is_deleted, false) = false`,
       [vehicleNumber]
     );
 
@@ -568,6 +583,16 @@ router.get("/incoming-call", async (req, res) => {
     }
 
     const row = result.rows[0];
+    const subscriptionEnd = row.subscription_end;
+    if (!subscriptionEnd || new Date(subscriptionEnd) < new Date()) {
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say>Your subscription has expired. Contact is not allowed.</Say>
+</Response>`;
+      res.type('text/xml');
+      return res.send(twiml);
+    }
+
     const targetPhone = callType === "emergency" ? row.emergency_contact : row.owner_phone;
 
     if (!targetPhone) {
