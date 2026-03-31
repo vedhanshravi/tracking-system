@@ -191,7 +191,23 @@ function Dashboard() {
 
   return (
     <div style={{ padding: "50px" }}>
-      <h2>Welcome, {getUserFullName || "User"}!</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h2 style={{ margin: 0 }}>Welcome, {getUserFullName || "User"}!</h2>
+        <button
+          type="button"
+          onClick={handleLogout}
+          style={{
+            padding: "10px 16px",
+            background: "#d9534f",
+            color: "white",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
+      </div>
       <div style={{ margin: "20px 0" }}>
         {tabs.map((tab) => (
           <button
@@ -221,7 +237,6 @@ function Dashboard() {
         <p><strong>State:</strong> {user.state || "-"}</p>
         <p><strong>Country:</strong> {user.country || "-"}</p>
         <p><strong>Postal Code:</strong> {user.postal_code || "-"}</p>
-          <button onClick={handleLogout}>Logout</button>
         </div>
       </>
       )}
