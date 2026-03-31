@@ -177,8 +177,7 @@ function Dashboard() {
         <p><strong>Middle Name:</strong> {user.middle_name || "-"}</p>
         <p><strong>Last Name:</strong> {user.last_name || "-"}</p>
         <p><strong>Email:</strong> {user.email || "-"}</p>
-        <p><strong>Subscription:</strong> {user.subscription_name || "-"}</p>
-        <p><strong>Subscription Tier:</strong> {user.subscription_tier || "-"}</p>
+        <p><strong>Subscription Type:</strong> {user.subscription_name || "-"}</p>
         <p><strong>Max Vehicles:</strong> {user.max_vehicles || "-"}</p>
         <p><strong>Phone:</strong> {user.phone || "-"}</p>
         <p><strong>Alternate Phone:</strong> {user.alternate_phone || "-"}</p>
