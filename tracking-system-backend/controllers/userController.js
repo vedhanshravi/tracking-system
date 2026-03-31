@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const { sendSmsMessage } = require("../utils/msg91");
 
 let passwordResetOtpTableCreated = false;
+let subscriptionTableReady = false;
+let userSubscriptionColumnReady = false;
 
 async function ensurePasswordResetOtpTable() {
   if (passwordResetOtpTableCreated) return;
@@ -16,6 +18,35 @@ async function ensurePasswordResetOtpTable() {
     )
   `);
   passwordResetOtpTableCreated = true;
+}
+
+async function ensureSubscriptionTable() {
+  if (subscriptionTableReady) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(50) NOT NULL UNIQUE,
+      tier INTEGER NOT NULL DEFAULT 1,
+      max_vehicles INTEGER NOT NULL DEFAULT 2,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    INSERT INTO subscriptions (name, tier, max_vehicles)
+    VALUES
+      ('Gold', 1, 2),
+      ('Platinum', 2, 5),
+      ('Diamond', 3, 10)
+    ON CONFLICT (name) DO NOTHING
+  `);
+  subscriptionTableReady = true;
+}
+
+async function ensureUserSubscriptionColumn() {
+  if (userSubscriptionColumnReady) return;
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_id INTEGER REFERENCES subscriptions(id)`);
+  await pool.query(`UPDATE users SET subscription_id = 1 WHERE subscription_id IS NULL`);
+  userSubscriptionColumnReady = true;
 }
 
 function generateOtp() {
@@ -42,6 +73,7 @@ exports.createUser = async (req, res) => {
       addressLine2,
       email,
       password,
+      subscriptionId,
     } = req.body;
 
     if (
@@ -57,6 +89,18 @@ exports.createUser = async (req, res) => {
       !password
     ) {
       return res.status(400).json({ message: "Missing required registration fields" });
+    }
+
+    await ensureSubscriptionTable();
+    await ensureUserSubscriptionColumn();
+
+    const selectedSubscriptionId = subscriptionId ? parseInt(subscriptionId, 10) : 1;
+    const subscriptionCheck = await pool.query(
+      "SELECT id FROM subscriptions WHERE id = $1",
+      [selectedSubscriptionId]
+    );
+    if (subscriptionCheck.rows.length === 0) {
+      return res.status(400).json({ message: "Invalid subscription selection" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -77,9 +121,10 @@ exports.createUser = async (req, res) => {
           address_line1,
           address_line2,
           email,
-          password
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-        RETURNING id, email, first_name, middle_name, last_name`,
+          password,
+          subscription_id
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        RETURNING id, email, first_name, middle_name, last_name, subscription_id`,
       [
         fullName,
         firstName,
@@ -95,6 +140,7 @@ exports.createUser = async (req, res) => {
         addressLine2 || null,
         email,
         hashedPassword,
+        selectedSubscriptionId,
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -135,6 +181,19 @@ exports.loginUser = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("Login failed");
+  }
+};
+
+exports.getSubscriptions = async (req, res) => {
+  try {
+    await ensureSubscriptionTable();
+    const result = await pool.query(
+      "SELECT id, name, tier, max_vehicles FROM subscriptions ORDER BY tier ASC"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to load subscriptions" });
   }
 };
 
@@ -234,8 +293,32 @@ exports.getCurrentUser = async (req, res) => {
   try {
     const userId = req.user.userId;
  
+    await ensureSubscriptionTable();
+    await ensureUserSubscriptionColumn();
+ 
     const result = await pool.query(
-      "SELECT id, email, first_name, middle_name, last_name, phone, alternate_phone, city, state, country, postal_code, address_line1, address_line2, created_at, role FROM users WHERE id = $1",
+      `SELECT u.id,
+              u.email,
+              u.first_name,
+              u.middle_name,
+              u.last_name,
+              u.phone,
+              u.alternate_phone,
+              u.city,
+              u.state,
+              u.country,
+              u.postal_code,
+              u.address_line1,
+              u.address_line2,
+              u.created_at,
+              u.role,
+              s.id AS subscription_id,
+              s.name AS subscription_name,
+              s.tier AS subscription_tier,
+              s.max_vehicles
+       FROM users u
+       LEFT JOIN subscriptions s ON u.subscription_id = s.id
+       WHERE u.id = $1`,
       [userId]
     );
  
