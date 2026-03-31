@@ -234,8 +234,9 @@ function Dashboard() {
         <p><strong>Last Name:</strong> {user.last_name || "-"}</p>
         <p><strong>Email:</strong> {user.email || "-"}</p>
         <p><strong>Subscription Type:</strong> {user.subscription_name || "-"}</p>
-        <p><strong>Subscription Start:</strong> {formatDate(user.subscription_start)}</p>
-        <p><strong>Subscription End:</strong> {formatDate(user.subscription_end)}</p>
+        <p><strong>Subscription Start:</strong> {user.subscription_start ? formatDate(user.subscription_start) : "Not set"}</p>
+        <p><strong>Subscription End:</strong> {user.subscription_end ? formatDate(user.subscription_end) : "Not set"}</p>
+        <p><strong>Subscription Status:</strong> {user.subscription_active === false ? "Expired" : user.subscription_active === true ? "Active" : "Unknown"}</p>
         <p><strong>Max Vehicles:</strong> {user.max_vehicles || "-"}</p>
         <p><strong>Phone:</strong> {user.phone || "-"}</p>
         <p><strong>Alternate Phone:</strong> {user.alternate_phone || "-"}</p>
