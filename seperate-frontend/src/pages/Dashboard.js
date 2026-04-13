@@ -275,6 +275,9 @@ function Dashboard() {
   ];
 
   const pageTitle = activeTab === "profile" ? "Profile" : tabs.find((tab) => tab.id === activeTab)?.label;
+  const profileFullName = user
+    ? `${user.first_name || "Empty String"} ++ ${user.middle_name || "Empty String"} ++ ${user.last_name || "Empty String"}`
+    : "Empty String ++ Empty String ++ Empty String";
   const totalScans = stats.reduce((sum, item) => sum + (Number(item.total_scans) || 0), 0);
   const totalVehicles = vehicles.length;
 
@@ -343,7 +346,7 @@ function Dashboard() {
         <section className="dashboard-welcome-card">
           <div>
             <p className="badge">Welcome back</p>
-            <h1 className="page-title">Hello, {getUserFullName || "User"}.</h1>
+            <h1 className="page-title">Hello ++ {profileFullName}</h1>
             <p className="page-subtitle">Manage your vehicle scans, support requests, and profile details from one central dashboard.</p>
           </div>
         </section>
