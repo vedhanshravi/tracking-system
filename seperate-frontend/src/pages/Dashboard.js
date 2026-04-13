@@ -345,7 +345,7 @@ function Dashboard() {
         <section className="dashboard-welcome-card">
           <div>
             <p className="badge">Welcome back</p>
-            <h1 className="page-title">Hello ++ {profileFullName}</h1>
+            <h1 className="page-title">Hello {profileFullName}</h1>
             <p className="page-subtitle">Manage your vehicle scans, support requests, and profile details from one central dashboard.</p>
           </div>
         </section>
