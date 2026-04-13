@@ -326,11 +326,12 @@ function Dashboard() {
               <p className="badge">Profile</p>
               <p style={{ margin: "14px 0 4px", fontWeight: 700 }}>{getUserFullName || "User"}</p>
               <p style={{ margin: "0 0 12px", color: "#94a3b8" }}>{user.email || "No email"}</p>
-              <div style={{ display: "grid", gap: "10px" }}>
+              <div style={{ display: "grid", gap: "10px", marginBottom: "16px" }}>
                 <div><strong>Status:</strong> {user.subscription_active === false ? "Expired" : user.subscription_active === true ? "Active" : "Unknown"}</div>
                 <div><strong>Vehicles:</strong> {totalVehicles}</div>
                 <div><strong>Scans:</strong> {totalScans}</div>
               </div>
+              <button className="danger-btn" type="button" onClick={handleLogout}>Sign out</button>
             </div>
           </div>
         </div>
@@ -341,7 +342,6 @@ function Dashboard() {
             <h1 className="page-title">Hello, {getUserFullName || "User"}.</h1>
             <p className="page-subtitle">Manage your vehicle scans, support requests, and profile details from one central dashboard.</p>
           </div>
-          <button className="danger-btn" type="button" onClick={handleLogout}>Sign out</button>
         </section>
 
         <section className="dashboard-overview-grid">
