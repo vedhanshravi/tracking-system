@@ -357,6 +357,61 @@ router.get("/pending", verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
+// Admin: list all vehicles by status for document verification
+router.get("/all", verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const vehicleNumber = req.query.vehicleNumber?.trim();
+    const status = req.query.status || "All";
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const pageSize = 10;
+    const offset = (page - 1) * pageSize;
+
+    const conditions = ["COALESCE(is_deleted, false) = false"];
+    if (status === "Pending") {
+      conditions.push("is_verified = false");
+    } else if (status === "Approved") {
+      conditions.push("is_verified = true");
+    }
+
+    if (vehicleNumber) {
+      const result = await pool.query(
+        `SELECT * FROM vehicles WHERE UPPER(vehicle_number) = UPPER($1) AND ${conditions.join(" AND ")} ORDER BY id ASC`,
+        [vehicleNumber]
+      );
+
+      return res.json({
+        data: result.rows,
+        page: 1,
+        pageSize: result.rows.length,
+        total: result.rows.length,
+        totalPages: 1,
+      });
+    }
+
+    const countResult = await pool.query(
+      `SELECT COUNT(*) AS total FROM vehicles WHERE ${conditions.join(" AND ")}`
+    );
+    const total = parseInt(countResult.rows[0].total, 10);
+    const totalPages = Math.ceil(total / pageSize);
+
+    const result = await pool.query(
+      `SELECT * FROM vehicles WHERE ${conditions.join(" AND ")} ORDER BY id ASC LIMIT $1 OFFSET $2`,
+      [pageSize, offset]
+    );
+
+    res.json({
+      data: result.rows,
+      page,
+      pageSize,
+      total,
+      totalPages,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Admin: serve vehicle document by ID and type
 router.get("/document/:vehicleId/:type", verifyToken, verifyAdmin, async (req, res) => {
   try {
