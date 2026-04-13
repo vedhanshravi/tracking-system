@@ -275,8 +275,8 @@ function Dashboard() {
   ];
 
   const pageTitle = activeTab === "profile" ? "Profile" : tabs.find((tab) => tab.id === activeTab)?.label;
-  const nameParts = [user?.first_name, user?.middle_name, user?.last_name].map((value) => value?.trim() || "");
-  const profileFullName = nameParts.every((part) => part === "") ? "User" : nameParts.join(" ++ ");
+  const nameParts = [user?.first_name, user?.middle_name, user?.last_name].map((value) => value?.trim()).filter(Boolean);
+  const profileFullName = nameParts.length === 0 ? "User" : nameParts.join(" ");
   const totalScans = stats.reduce((sum, item) => sum + (Number(item.total_scans) || 0), 0);
   const totalVehicles = vehicles.length;
 
