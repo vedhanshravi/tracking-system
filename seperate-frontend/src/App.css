@@ -506,6 +506,79 @@ body {
   gap: 18px;
 }
 
+.vehicle-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 24px;
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.vehicle-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.vehicle-card-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.vehicle-card-subtitle {
+  margin: 6px 0 0;
+  font-size: 0.95rem;
+  color: #94a3b8;
+}
+
+.vehicle-card-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vehicle-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.vehicle-card-key {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.vehicle-card-value {
+  color: #e2e8f0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.vehicle-card-qr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.vehicle-card-delete {
+  width: fit-content;
+  padding: 12px 18px;
+}
+
+@media (max-width: 880px) {
+  .vehicle-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .profile-item {
   padding: 20px;
   border-radius: 18px;

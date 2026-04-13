@@ -568,25 +568,67 @@ function Dashboard() {
           {activeTab === "myvehicles" && (
             <div style={{ display: 'grid', gap: 18 }}>
               <h3>My Vehicles</h3>
-              {vehicles.length === 0 ? <p>No vehicles added yet.</p> : vehicles.map((v) => (
-                <div key={v.id} style={{ border: '1px solid rgba(148, 163, 184, 0.16)', padding: 18, borderRadius: 16, background: '#0f172a' }}>
-                  <p><strong>Number:</strong> {v.vehicle_number}</p>
-                  <p><strong>Verified:</strong> {v.is_verified ? 'Yes' : 'No (pending admin approval)'}</p>
-                  {v.rc_url && <p><strong>RC:</strong> <a href={v.rc_url} target="_blank" rel="noopener noreferrer">View</a></p>}
-                  {v.adhar_url && <p><strong>Aadhar:</strong> <a href={v.adhar_url} target="_blank" rel="noopener noreferrer">View</a></p>}
-                  {v.qr && (
-                    <div style={{ marginTop: 12 }}>
-                      <img src={v.qr} alt="QR" width={200} />
-                      <div style={{ marginTop: 8 }}>
+              {vehicles.length === 0 ? (
+                <p>No vehicles added yet.</p>
+              ) : (
+                vehicles.map((v) => (
+                  <div key={v.id} className="vehicle-card">
+                    <div className="vehicle-card-header">
+                      <div>
+                        <p className="vehicle-card-title">{v.vehicle_number || 'Untitled Vehicle'}</p>
+                        <p className="vehicle-card-subtitle">Vehicle information and documents</p>
+                      </div>
+                      <span className={`pill ${v.is_verified ? 'pill-success' : 'pill-warning'}`}>
+                        {v.is_verified ? 'Verified' : 'Pending approval'}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-card-grid">
+                      <div className="vehicle-card-row">
+                        <span className="vehicle-card-key">Number</span>
+                        <span className="vehicle-card-value">{v.vehicle_number || '-'}</span>
+                      </div>
+                      <div className="vehicle-card-row">
+                        <span className="vehicle-card-key">Verified</span>
+                        <span className="vehicle-card-value">{v.is_verified ? 'Yes' : 'No'}</span>
+                      </div>
+                      <div className="vehicle-card-row">
+                        <span className="vehicle-card-key">RC</span>
+                        <span className="vehicle-card-value">
+                          {v.rc_url ? (
+                            <a className="link-btn" href={v.rc_url} target="_blank" rel="noopener noreferrer">View</a>
+                          ) : (
+                            'Not uploaded'
+                          )}
+                        </span>
+                      </div>
+                      <div className="vehicle-card-row">
+                        <span className="vehicle-card-key">Aadhar</span>
+                        <span className="vehicle-card-value">
+                          {v.adhar_url ? (
+                            <a className="link-btn" href={v.adhar_url} target="_blank" rel="noopener noreferrer">View</a>
+                          ) : (
+                            'Not uploaded'
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    {v.qr && (
+                      <div className="vehicle-card-qr">
+                        <img src={v.qr} alt="QR" width={180} />
                         <a href={v.qr} download={`QR-${v.vehicle_number}.png`}>
                           <button className="secondary-btn" type="button">Download QR</button>
                         </a>
                       </div>
-                    </div>
-                  )}
-                  <button className="danger-btn" type="button" style={{ marginTop: 12 }} onClick={() => handleDeleteVehicle(v.id)}>Delete Vehicle</button>
-                </div>
-              ))}
+                    )}
+
+                    <button className="danger-btn vehicle-card-delete" type="button" onClick={() => handleDeleteVehicle(v.id)}>
+                      Delete Vehicle
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           )}
 
