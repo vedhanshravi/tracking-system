@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [vehicleNumber, setVehicleNumber] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
 
   const getUserFullName = user
     ? `${user.first_name || ""}${user.middle_name ? ` ${user.middle_name}` : ""}${user.last_name ? ` ${user.last_name}` : ""}`.trim()
@@ -37,7 +38,7 @@ function Dashboard() {
 
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("help");
   const navigate = useNavigate();
 
   const fetchVehicles = async () => {
@@ -266,342 +267,395 @@ function Dashboard() {
   if (!user) return <p>Loading...</p>;
 
   const tabs = [
-    { id: "profile", label: "Profile" },
-    { id: "help", label: "Help" },
-    { id: "scan", label: "Scan Vehicle" },
-    { id: "add", label: "Add Vehicle" },
     { id: "myvehicles", label: "My Vehicles" },
+    { id: "add", label: "Add Vehicle" },
     { id: "analytics", label: "Scan Analytics" },
+    { id: "scan", label: "Scan Vehicle" },
+    { id: "help", label: "Help" },
   ];
 
-  const tabButtonStyle = (tabId) => ({
-    padding: "10px 16px",
-    border: "1px solid #ccc",
-    background: activeTab === tabId ? "#007bff" : "white",
-    color: activeTab === tabId ? "white" : "black",
-    cursor: "pointer",
-    borderRadius: 4,
-    marginRight: 8,
-    marginBottom: 16,
-  });
+  const pageTitle = activeTab === "profile" ? "Profile" : tabs.find((tab) => tab.id === activeTab)?.label;
+  const nameParts = [user?.first_name, user?.middle_name, user?.last_name].map((value) => value?.trim()).filter(Boolean);
+  const profileFullName = nameParts.length === 0 ? "User" : nameParts.join(" ");
+  const totalScans = stats.reduce((sum, item) => sum + (Number(item.total_scans) || 0), 0);
+  const totalVehicles = vehicles.length;
 
   return (
-    <div style={{ padding: "50px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>Welcome, {getUserFullName || "User"}!</h2>
-        <button
-          type="button"
-          onClick={handleLogout}
-          style={{
-            padding: "10px 16px",
-            background: "#d9534f",
-            color: "white",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Logout
-        </button>
-      </div>
-      <div style={{ margin: "20px 0" }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            style={tabButtonStyle(tab.id)}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-      {activeTab === "profile" && (
-        <>
-          <div style={{ marginBottom: 20 }}>
-        <p><strong>First Name:</strong> {user.first_name || "-"}</p>
-        <p><strong>Middle Name:</strong> {user.middle_name || "-"}</p>
-        <p><strong>Last Name:</strong> {user.last_name || "-"}</p>
-        <p><strong>Email:</strong> {user.email || "-"}</p>
-        <p><strong>Subscription Type:</strong> {user.subscription_name || "-"}</p>
-        <p><strong>Subscription Start:</strong> {user.subscription_start ? formatDate(user.subscription_start) : "Not set"}</p>
-        <p><strong>Subscription End:</strong> {user.subscription_end ? formatDate(user.subscription_end) : "Not set"}</p>
-        <p><strong>Subscription Status:</strong> {user.subscription_active === false ? "Expired" : user.subscription_active === true ? "Active" : "Unknown"}</p>
-        <p><strong>Max Vehicles:</strong> {user.max_vehicles || "-"}</p>
-        <p><strong>Phone:</strong> {user.phone || "-"}</p>
-        <p><strong>Alternate Phone:</strong> {user.alternate_phone || "-"}</p>
-        <p><strong>Address Line 1:</strong> {user.address_line1 || "-"}</p>
-        <p><strong>Address Line 2:</strong> {user.address_line2 || "-"}</p>
-        <p><strong>City:</strong> {user.city || "-"}</p>
-        <p><strong>State:</strong> {user.state || "-"}</p>
-        <p><strong>Country:</strong> {user.country || "-"}</p>
-        <p><strong>Postal Code:</strong> {user.postal_code || "-"}</p>
+    <div className="dashboard-shell">
+      <aside className="dashboard-sidebar">
+        <div className="dashboard-brand">
+          <div className="dashboard-brand-icon">TP</div>
+          <div>
+            <div className="dashboard-brand-title">TrackPro</div>
+            <div className="dashboard-brand-subtitle">Vehicle tracking</div>
+          </div>
         </div>
-      </>
-      )}
 
-      {activeTab === "help" && (
-        <div>
-          <h3>Help & Support</h3>
-          <div style={{ marginBottom: 16, maxWidth: 600 }}>
-            <label>
-              Email:
-              <input
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                style={{ width: "100%", padding: 8, marginTop: 4, marginBottom: 12 }}
-              />
-            </label>
-            <label>
-              Mobile Number:
-              <input
-                type="text"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                style={{ width: "100%", padding: 8, marginTop: 4, marginBottom: 12 }}
-              />
-            </label>
-            <label>
-              Short Description:
-              <input
-                type="text"
-                value={helpDescription}
-                onChange={(e) => setHelpDescription(e.target.value)}
-                style={{ width: "100%", padding: 8, marginTop: 4, marginBottom: 12 }}
-              />
-            </label>
-            <label>
-              Detail Description:
-              <textarea
-                value={helpDetailDescription}
-                onChange={(e) => setHelpDetailDescription(e.target.value)}
-                rows={6}
-                style={{ width: "100%", padding: 8, marginTop: 4, marginBottom: 12 }}
-              />
-            </label>
-            <button onClick={handleRaiseHelpIssue} style={{ padding: "10px 16px" }}>
-              Submit Help Request
+        <nav className="dashboard-nav">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`dashboard-nav-item ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
             </button>
+          ))}
+        </nav>
+      </aside>
+
+      <main className="dashboard-main">
+        <div className="dashboard-topbar">
+          <div className="dashboard-search">
+            <span className="dashboard-search-icon">🔍</span>
+            <input className="input-field" placeholder="Search dashboard..." />
           </div>
 
-          <div style={{ maxWidth: 800 }}>
-            <h4>Your Raised Issues</h4>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-              {['All', 'Open', 'In progress', 'Resolved', 'Cancelled'].map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => setHelpTab(status)}
-                  style={{
-                    padding: "8px 14px",
-                    borderRadius: 4,
-                    border: helpTab === status ? "1px solid #007bff" : "1px solid #ccc",
-                    background: helpTab === status ? "#007bff" : "#f8f9fa",
-                    color: helpTab === status ? "white" : "black",
-                    cursor: "pointer",
-                  }}
-                >
-                  {status} ({helpCounts[status]})
-                </button>
-              ))}
+          <div className="dashboard-actions">
+            <button className="outline-btn" type="button">Notifications</button>
+            <button
+              type="button"
+              className="dashboard-avatar-button"
+              onClick={() => {
+                setShowProfile((open) => !open);
+              }}
+            >
+              <div className="dashboard-avatar">{getUserFullName ? getUserFullName.split(" ").map((n) => n[0]).slice(0,2).join("") : "JD"}</div>
+            </button>
+            <div className={`dashboard-profile-dropdown ${showProfile ? "open" : ""}`}>
+              <p className="badge">Account</p>
+              <p style={{ margin: "14px 0 4px", fontWeight: 700 }}>{getUserFullName || "User"}</p>
+              <p style={{ margin: "0 0 12px", color: "#94a3b8" }}>{user.email || "No email"}</p>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => {
+                  setActiveTab("profile");
+                  setShowProfile(false);
+                }}
+              >
+                Profile
+              </button>
+              <button className="danger-btn" type="button" onClick={handleLogout}>Sign out</button>
             </div>
-            {helpLoading ? (
-              <p>Loading your help requests...</p>
-            ) : helpRequests.length === 0 ? (
-              <p>No help requests submitted yet.</p>
-            ) : (
-              helpRequests
-                .filter((issue) => helpTab === 'All' || issue.status === helpTab)
-                .map((issue) => {
-                  const badgeColor = issue.status === "Open"
-                    ? "#ffeb3b"
-                    : issue.status === "In progress"
-                    ? "#90caf9"
-                    : issue.status === "Resolved"
-                    ? "#a5d6a7"
-                    : issue.status === "Cancelled"
-                    ? "#ef9a9a"
-                    : "#e0e0e0";
-
-                  return (
-                    <div key={issue.id} style={{ border: "1px solid #ccc", padding: 12, marginBottom: 12, borderRadius: 4 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-                        <p><strong>Issue #{issue.id}</strong></p>
-                        <span
-                          style={{
-                            background: badgeColor,
-                            padding: "4px 10px",
-                            borderRadius: 999,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {issue.status}
-                        </span>
-                      </div>
-                      <p><strong>Description:</strong> {issue.description}</p>
-                      <p><strong>Details:</strong> {issue.detail_description || "-"}</p>
-                      <p><strong>Contact Email:</strong> {issue.contact_email || "-"}</p>
-                      <p><strong>Contact Phone:</strong> {issue.contact_phone || "-"}</p>
-                      <p><strong>Submitted At:</strong> {issue.created_at ? new Date(issue.created_at).toLocaleString() : "-"}</p>
-                      <p><strong>Last Updated:</strong> {issue.updated_at ? new Date(issue.updated_at).toLocaleString() : "-"}</p>
-                    </div>
-                  );
-                })
-            )}
           </div>
         </div>
-      )}
 
-      {activeTab === "scan" && (
-        <div>
-          <h3>Scan Vehicle</h3>
-      <button onClick={handleScan}>Open QR Scanner</button>
-        </div>
-      )}
+        <section className="dashboard-welcome-card">
+          <div>
+            <p className="badge">Welcome back</p>
+            <h1 className="page-title">Hello {profileFullName}</h1>
+            <p className="page-subtitle">Manage your vehicle scans, support requests, and profile details from one central dashboard.</p>
+          </div>
+        </section>
 
-      {activeTab === "add" && (
-        <div>
-          <h3>Add Vehicle</h3>
-          <input
-            placeholder="Vehicle Number"
-            value={vehicleNumber}
-            onChange={(e) => setVehicleNumber(e.target.value)}
-          />
-      <input
-        placeholder="Owner Name"
-        value={ownerName}
-        onChange={(e) => setOwnerName(e.target.value)}
-      />
-      <input
-        placeholder="Owner Phone"
-        value={ownerPhone}
-        onChange={(e) => setOwnerPhone(e.target.value)}
-      />
-      <input
-        placeholder="Emergency Contact Number"
-        value={emergencyContact}
-        onChange={(e) => setEmergencyContact(e.target.value)}
-      />
-      <div>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span>
-            RC Document:
-            <span
-              style={{ marginLeft: 8, cursor: "help", fontSize: "0.85rem", opacity: 0.7 }}
-              title="Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB."
-            >
-              ℹ️
-            </span>
-          </span>
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(e) => setRcFile(e.target.files[0])}
-          />
-        </label>
-      </div>
-      <div>
-        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <span>
-            Aadhar Document:
-            <span
-              style={{ marginLeft: 8, cursor: "help", fontSize: "0.85rem", opacity: 0.7 }}
-              title="Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB."
-            >
-              ℹ️
-            </span>
-          </span>
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(e) => setAdharFile(e.target.files[0])}
-          />
-        </label>
-      </div>
-      <button onClick={handleAddVehicle}>Add Vehicle</button>
-        </div>
-      )}
+        <section className="dashboard-overview-grid">
+          <div className="dashboard-overview-card">
+            <p>Vehicles tracked</p>
+            <div className="stat-value">{totalVehicles}</div>
+            <p className="stat-label">Active vehicles registered</p>
+          </div>
+          <div className="dashboard-overview-card">
+            <p>Total scans</p>
+            <div className="stat-value">{totalScans}</div>
+            <p className="stat-label">Scans performed this month</p>
+          </div>
+          <div className="dashboard-overview-card">
+            <p>Open requests</p>
+            <div className="stat-value">{helpCounts.Open}</div>
+            <p className="stat-label">Pending support issues</p>
+          </div>
+        </section>
 
-      {activeTab === "myvehicles" && (
-        <div>
-          <h3>My Vehicles</h3>
-      {vehicles.length === 0 && <p>No vehicles added yet.</p>}
-      {vehicles.map((v) => (
-        <div key={v.id} style={{ marginBottom: "20px" }}>
-          <p>
-            <strong>Number:</strong> {v.vehicle_number}
-          </p>
-          <p>
-            <strong>Verified:</strong> {v.is_verified ? "Yes" : "No (pending admin approval)"}
-          </p>
-          {v.rc_url && (
-            <p>
-              RC: <a href={v.rc_url} target="_blank" rel="noopener noreferrer">View</a>
-            </p>
-          )}
-          {v.adhar_url && (
-            <p>
-              Aadhar: <a href={v.adhar_url} target="_blank" rel="noopener noreferrer">View</a>
-            </p>
-          )}
-          {v.qr && (
+        <div className="page-card">
+          <div className="page-hero" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div>
-              <img src={v.qr} alt="QR" width={200} />
-              <div style={{ marginTop: 8 }}>
-                <a href={v.qr} download={`QR-${v.vehicle_number}.png`}>
-                  <button>Download QR</button>
-                </a>
+              <h2 className="page-title">{pageTitle}</h2>
+              <p className="page-subtitle">Quick actions and details for the selected dashboard section.</p>
+            </div>
+          </div>
+
+          {activeTab === "profile" && (
+            <section className="profile-section">
+              <div className="profile-summary-card">
+                <p className="badge">Profile overview</p>
+                <h3 className="profile-name">{getUserFullName || "Anonymous User"}</h3>
+                <p className="profile-email">{user.email || "No email available"}</p>
+                <div className="profile-meta">
+                  <span className={`pill ${user.subscription_active === false ? "pill-danger" : "pill-success"}`}>
+                    {user.subscription_active === false ? "Expired" : "Active"}
+                  </span>
+                  <span className="pill">{user.subscription_name || "Standard"}</span>
+                </div>
+              </div>
+
+              <div className="profile-grid">
+                <div className="profile-item">
+                  <span className="profile-key">First Name</span>
+                  <span className="profile-value">{user.first_name || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Middle Name</span>
+                  <span className="profile-value">{user.middle_name || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Last Name</span>
+                  <span className="profile-value">{user.last_name || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Subscription Start</span>
+                  <span className="profile-value">{user.subscription_start ? formatDate(user.subscription_start) : "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Subscription End</span>
+                  <span className="profile-value">{user.subscription_end ? formatDate(user.subscription_end) : "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Max Vehicles</span>
+                  <span className="profile-value">{user.max_vehicles || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Phone</span>
+                  <span className="profile-value">{user.phone || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Alternate Phone</span>
+                  <span className="profile-value">{user.alternate_phone || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Address Line 1</span>
+                  <span className="profile-value">{user.address_line1 || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Address Line 2</span>
+                  <span className="profile-value">{user.address_line2 || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">City</span>
+                  <span className="profile-value">{user.city || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">State</span>
+                  <span className="profile-value">{user.state || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Country</span>
+                  <span className="profile-value">{user.country || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Postal Code</span>
+                  <span className="profile-value">{user.postal_code || "-"}</span>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {activeTab === "help" && (
+            <div style={{ display: "grid", gap: 24 }}>
+              <div style={{ display: "grid", gap: 14, maxWidth: 760 }}>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input className="input-field" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Mobile Number</label>
+                  <input className="input-field" type="text" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Short Description</label>
+                  <input className="input-field" type="text" value={helpDescription} onChange={(e) => setHelpDescription(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Detail Description</label>
+                  <textarea className="textarea-field" value={helpDetailDescription} onChange={(e) => setHelpDetailDescription(e.target.value)} rows={6} />
+                </div>
+                <button className="primary-btn" onClick={handleRaiseHelpIssue}>Submit Help Request</button>
+              </div>
+
+              <div style={{ display: "grid", gap: 16 }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {['All', 'Open', 'In progress', 'Resolved', 'Cancelled'].map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      className={`tab-btn ${helpTab === status ? 'active' : ''}`}
+                      onClick={() => setHelpTab(status)}
+                    >
+                      {status} ({helpCounts[status]})
+                    </button>
+                  ))}
+                </div>
+
+                {helpLoading ? (
+                  <p>Loading your help requests...</p>
+                ) : helpRequests.length === 0 ? (
+                  <p>No help requests submitted yet.</p>
+                ) : (
+                  helpRequests
+                    .filter((issue) => helpTab === 'All' || issue.status === helpTab)
+                    .map((issue) => {
+                      const badgeColor = issue.status === 'Open'
+                        ? '#ffeb3b'
+                        : issue.status === 'In progress'
+                          ? '#90caf9'
+                          : issue.status === 'Resolved'
+                            ? '#a5d6a7'
+                            : issue.status === 'Cancelled'
+                              ? '#ef9a9a'
+                              : '#e0e0e0';
+
+                      return (
+                        <div key={issue.id} style={{ border: '1px solid rgba(148, 163, 184, 0.16)', padding: 16, borderRadius: 16, background: '#0f172a' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                            <p><strong>Issue #{issue.id}</strong></p>
+                            <span style={{ background: badgeColor, padding: '6px 12px', borderRadius: 999, fontWeight: 600 }}>{issue.status}</span>
+                          </div>
+                          <p><strong>Description:</strong> {issue.description}</p>
+                          <p><strong>Details:</strong> {issue.detail_description || '-'}</p>
+                          <p><strong>Contact Email:</strong> {issue.contact_email || '-'}</p>
+                          <p><strong>Contact Phone:</strong> {issue.contact_phone || '-'}</p>
+                          <p><strong>Submitted At:</strong> {issue.created_at ? new Date(issue.created_at).toLocaleString() : '-'}</p>
+                          <p><strong>Last Updated:</strong> {issue.updated_at ? new Date(issue.updated_at).toLocaleString() : '-'}</p>
+                        </div>
+                      );
+                    })
+                )}
               </div>
             </div>
           )}
-          <button
-            style={{ marginTop: 12, background: "#d9534f", color: "white", border: "none", padding: "8px 12px", cursor: "pointer" }}
-            onClick={() => handleDeleteVehicle(v.id)}
-          >
-            Delete Vehicle
-          </button>
-        </div>
-      ))}
-        </div>
-      )}
 
-      {isSubscriptionExpired(user) && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: "#ffdddd",
-            color: "#b71c1c",
-            padding: "12px 20px",
-            textAlign: "center",
-            borderTop: "1px solid #f44336",
-            zIndex: 1000,
-          }}
-        >
-          Your subscription has expired. You can still login and view your details, but owner/emergency contact features are disabled until renewal.
-        </div>
-      )}
+          {activeTab === "scan" && (
+            <div style={{ display: 'grid', gap: 16 }}>
+              <h3>Scan Vehicle</h3>
+              <button className="primary-btn" onClick={handleScan}>Open QR Scanner</button>
+            </div>
+          )}
 
-      {activeTab === "analytics" && (
-        <div>
-          <h3>Scan Analytics</h3>
-      {stats.length === 0 && <p>No scan data yet.</p>}
-      {stats.map((item) => (
-        <div key={item.id} style={{ marginBottom: "15px" }}>
-          <p><strong>Vehicle:</strong> {item.vehicle_number}</p>
-          <p>Total Scans: {item.total_scans}</p>
-          <p>
-            Last Scanned: {item.last_scanned ? new Date(item.last_scanned).toLocaleString() : "Never"}
-          </p>
+          {activeTab === "add" && (
+            <div style={{ display: 'grid', gap: 16 }}>
+              <h3>Add Vehicle</h3>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Vehicle Number</label>
+                  <input className="input-field" placeholder="Vehicle Number" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Owner Name</label>
+                  <input className="input-field" placeholder="Owner Name" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Owner Phone</label>
+                  <input className="input-field" placeholder="Owner Phone" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Emergency Contact Number</label>
+                  <input className="input-field" placeholder="Emergency Contact Number" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">RC Document</label>
+                  <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setRcFile(e.target.files[0])} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Aadhar Document</label>
+                  <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setAdharFile(e.target.files[0])} />
+                </div>
+              </div>
+              <button className="primary-btn" onClick={handleAddVehicle}>Add Vehicle</button>
+            </div>
+          )}
+
+          {activeTab === "myvehicles" && (
+            <div style={{ display: 'grid', gap: 18 }}>
+              <h3>My Vehicles</h3>
+              {vehicles.length === 0 ? (
+                <p>No vehicles added yet.</p>
+              ) : (
+                vehicles.map((v) => (
+                  <div key={v.id} className="vehicle-card">
+                    <div className="vehicle-card-header">
+                      <div>
+                        <p className="vehicle-card-title">{v.vehicle_number || 'Untitled Vehicle'}</p>
+                        <p className="vehicle-card-subtitle">Vehicle information and documents</p>
+                      </div>
+                      <span className={`pill ${v.is_verified ? 'pill-success' : 'pill-warning'}`}>
+                        {v.is_verified ? 'Verified' : 'Pending approval'}
+                      </span>
+                    </div>
+
+                    <div className="vehicle-card-grid">
+                      <div className="vehicle-card-row">
+                        <span className="vehicle-card-key">Number</span>
+                        <span className="vehicle-card-value">{v.vehicle_number || '-'}</span>
+                      </div>
+                      <div className="vehicle-card-row">
+                        <span className="vehicle-card-key">Verified</span>
+                        <span className="vehicle-card-value">{v.is_verified ? 'Yes' : 'No'}</span>
+                      </div>
+                      <div className="vehicle-card-row">
+                        <span className="vehicle-card-key">RC</span>
+                        <span className="vehicle-card-value">
+                          {v.rc_url ? (
+                            <a className="link-btn" href={v.rc_url} target="_blank" rel="noopener noreferrer">View</a>
+                          ) : (
+                            'Not uploaded'
+                          )}
+                        </span>
+                      </div>
+                      <div className="vehicle-card-row">
+                        <span className="vehicle-card-key">Aadhar</span>
+                        <span className="vehicle-card-value">
+                          {v.adhar_url ? (
+                            <a className="link-btn" href={v.adhar_url} target="_blank" rel="noopener noreferrer">View</a>
+                          ) : (
+                            'Not uploaded'
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    {v.qr && (
+                      <div className="vehicle-card-qr">
+                        <img src={v.qr} alt="QR" width={180} />
+                        <a href={v.qr} download={`QR-${v.vehicle_number}.png`}>
+                          <button className="secondary-btn" type="button">Download QR</button>
+                        </a>
+                      </div>
+                    )}
+
+                    <button className="danger-btn vehicle-card-delete" type="button" onClick={() => handleDeleteVehicle(v.id)}>
+                      Delete Vehicle
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {isSubscriptionExpired(user) && (
+            <div className="alert-banner">
+              Your subscription has expired. You can still login and view your details, but owner/emergency contact features are disabled until renewal.
+            </div>
+          )}
+
+          {activeTab === "analytics" && (
+            <div style={{ display: 'grid', gap: 16 }}>
+              <h3>Scan Analytics</h3>
+              {stats.length === 0 ? <p>No scan data yet.</p> : stats.map((item) => (
+                <div key={item.id} style={{ border: '1px solid rgba(148, 163, 184, 0.16)', padding: 18, borderRadius: 16, background: '#0f172a' }}>
+                  <p><strong>Vehicle:</strong> {item.vehicle_number}</p>
+                  <p>Total Scans: {item.total_scans}</p>
+                  <p>Last Scanned: {item.last_scanned ? new Date(item.last_scanned).toLocaleString() : 'Never'}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      ))}
-        </div>
-      )}
+      </main>
     </div>
   );
 }
 
 export default Dashboard;
+
+

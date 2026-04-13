@@ -185,182 +185,137 @@ function Register() {
   };
 
   return (
-    <div style={{ padding: "50px" }}>
-      <h2>Register</h2>
-      <div style={{ marginBottom: 24 }}>
-        <strong>Step {step} of 3</strong>
-      </div>
-
-      {step === 1 && (
-        <>
-          <label style={{ display: "block", margin: "10px 0 5px" }}>First Name *:</label>
-          <input
-            placeholder="Enter first name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Middle Name:</label>
-          <input
-            placeholder="Enter middle name (optional)"
-            value={middleName}
-            onChange={(e) => setMiddleName(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Last Name *:</label>
-          <input
-            placeholder="Enter last name"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Phone *:</label>
-          <input
-            placeholder="Enter phone number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Alternate Phone:</label>
-          <input
-            placeholder="Enter alternate phone (optional)"
-            value={alternatePhone}
-            onChange={(e) => setAlternatePhone(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>City *:</label>
-          <input
-            placeholder="Enter city"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>State *:</label>
-          <input
-            placeholder="Enter state"
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Country *:</label>
-          <input
-            placeholder="Enter country"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Postal Code *:</label>
-          <input
-            placeholder="Enter postal code"
-            value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Address Line 1 *:</label>
-          <input
-            placeholder="Enter address line 1"
-            value={addressLine1}
-            onChange={(e) => setAddressLine1(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Address Line 2:</label>
-          <input
-            placeholder="Enter address line 2 (optional)"
-            value={addressLine2}
-            onChange={(e) => setAddressLine2(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Email *:</label>
-          <input
-            placeholder="Enter email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Password *:</label>
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </>
-      )}
-
-      {step === 2 && (
-        <>
-          <h3 style={{ marginTop: 24 }}>Vehicle Details</h3>
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Vehicle Number *:</label>
-          <input
-            placeholder="Enter vehicle number"
-            value={vehicleNumber}
-            onChange={(e) => setVehicleNumber(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Owner Phone *:</label>
-          <input
-            placeholder="Enter owner phone number"
-            value={ownerPhone}
-            onChange={(e) => setOwnerPhone(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Emergency Contact *:</label>
-          <input
-            placeholder="Enter emergency contact number"
-            value={emergencyContact}
-            onChange={(e) => setEmergencyContact(e.target.value)}
-          />
-          <div style={{ marginTop: 16 }}>
-            <label style={{ display: "block", marginBottom: 6 }}>
-              RC Document:
-            </label>
-            <input
-              type="file"
-              accept=".pdf,image/*"
-              onChange={(e) => setRcFile(e.target.files[0])}
-            />
+    <div className="page-container">
+      <div className="page-card">
+        <div className="page-hero">
+          <div>
+            <h2 className="page-title">Register Your Vehicle</h2>
+            <p className="page-subtitle">Complete the secure onboarding flow to create your tracking account and submit vehicle details in three easy steps.</p>
           </div>
-          <div style={{ marginTop: 16 }}>
-            <label style={{ display: "block", marginBottom: 6 }}>
-              Aadhar Document:
-            </label>
-            <input
-              type="file"
-              accept=".pdf,image/*"
-              onChange={(e) => setAdharFile(e.target.files[0])}
-            />
+          <div className="badge">Step {step} of 3</div>
+        </div>
+
+        {step === 1 && (
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">First Name *</label>
+              <input className="input-field" placeholder="Enter first name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Middle Name</label>
+              <input className="input-field" placeholder="Enter middle name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Last Name *</label>
+              <input className="input-field" placeholder="Enter last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            </div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Phone *</label>
+                <input className="input-field" placeholder="Primary phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Alternate Phone</label>
+                <input className="input-field" placeholder="Alternate phone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} />
+              </div>
+            </div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">City *</label>
+                <input className="input-field" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">State *</label>
+                <input className="input-field" placeholder="State" value={state} onChange={(e) => setState(e.target.value)} />
+              </div>
+            </div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Country *</label>
+                <input className="input-field" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Postal Code *</label>
+                <input className="input-field" placeholder="Postal Code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Address Line 1 *</label>
+              <input className="input-field" placeholder="Address line 1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Address Line 2</label>
+              <input className="input-field" placeholder="Address line 2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+            </div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Email *</label>
+                <input className="input-field" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Password *</label>
+                <input className="input-field" type="password" placeholder="Create a password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              </div>
+            </div>
           </div>
-        </>
-      )}
-
-      {step === 3 && (
-        <>
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Subscription Type *:</label>
-          <select
-            value={subscriptionId}
-            onChange={(e) => setSubscriptionId(e.target.value)}
-            style={{ width: "100%", padding: 8, marginBottom: 12 }}
-          >
-            <option value="" disabled>
-              Select subscription
-            </option>
-            {subscriptions.map((sub) => (
-              <option key={sub.id} value={sub.id}>
-                {sub.name}
-              </option>
-            ))}
-          </select>
-        </>
-      )}
-
-      <div style={{ marginTop: 24, display: "flex", gap: 12 }}>
-        {step > 1 && (
-          <button type="button" onClick={handleBack}>
-            Back
-          </button>
         )}
-        {step < 3 && (
-          <button type="button" onClick={handleNext}>
-            Next
-          </button>
+
+        {step === 2 && (
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Vehicle Number *</label>
+              <input className="input-field" placeholder="Enter vehicle number" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} />
+            </div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Owner Phone *</label>
+                <input className="input-field" placeholder="Owner phone" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Emergency Contact *</label>
+                <input className="input-field" placeholder="Emergency contact" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">RC Document *</label>
+              <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setRcFile(e.target.files[0])} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Aadhar Document *</label>
+              <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setAdharFile(e.target.files[0])} />
+            </div>
+            <p className="help-text">Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB.</p>
+          </div>
         )}
+
         {step === 3 && (
-          <button type="button" onClick={handleRegister}>
-            Submit Registration
-          </button>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Choose Subscription Plan *</label>
+              <select className="select-field" value={subscriptionId} onChange={(e) => setSubscriptionId(e.target.value)}>
+                {subscriptions.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.name} - {sub.price ? `₹${sub.price}` : "Free"}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="help-card">
+              <p><strong>Plan details</strong></p>
+              <p>Pick the plan that fits your usage. Your subscription will determine verification and vehicle support access.</p>
+            </div>
+          </div>
         )}
-      </div>
 
-      <p style={{ marginTop: 24 }}>
-        Already have an account?{' '}
-        <button onClick={() => navigate("/")}>Login</button>
-      </p>
+        <div className="button-row" style={{ justifyContent: "space-between" }}>
+          <button className="secondary-btn" type="button" onClick={handleBack} disabled={step === 1}>Back</button>
+          {step < 3 ? (
+            <button className="primary-btn" type="button" onClick={handleNext}>Continue</button>
+          ) : (
+            <button className="primary-btn" type="button" onClick={handleRegister}>Complete Registration</button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
