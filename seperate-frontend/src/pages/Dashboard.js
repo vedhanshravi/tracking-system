@@ -19,6 +19,12 @@ function Dashboard() {
   const [emergencyContact, setEmergencyContact] = useState("");
   const [vehicles, setVehicles] = useState([]);
   const [stats, setStats] = useState([]);
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [helpDescription, setHelpDescription] = useState("");
+  const [helpDetailDescription, setHelpDetailDescription] = useState("");
+  const [helpRequests, setHelpRequests] = useState([]);
+  const [helpLoading, setHelpLoading] = useState(false);
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
@@ -84,10 +90,32 @@ function Dashboard() {
       });
   }, [navigate]);
 
+  const fetchHelpRequests = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    setHelpLoading(true);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/help/my`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setHelpRequests(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setHelpLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchVehicles();
       fetchStats();
+      setContactEmail(user.email || "");
+      setContactPhone(user.phone || "");
+      fetchHelpRequests();
     }
   }, [user]);
 
@@ -98,6 +126,47 @@ function Dashboard() {
 
   const handleScan = () => {
     navigate("/scanner");
+  };
+
+  const handleRaiseHelpIssue = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    if (!helpDescription.trim() || (!contactEmail.trim() && !contactPhone.trim())) {
+      alert("Please provide a description and at least an email or phone number.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/help/raise`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          contact_email: contactEmail.trim() || null,
+          contact_phone: contactPhone.trim() || null,
+          description: helpDescription.trim(),
+          detail_description: helpDetailDescription.trim() || null,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.message || "Failed to submit help request");
+        return;
+      }
+
+      alert("Help request submitted successfully.");
+      setHelpDescription("");
+      setHelpDetailDescription("");
+      fetchHelpRequests();
+      setActiveTab("help");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit help request");
+    }
   };
 
   const handleAddVehicle = async () => {
@@ -188,6 +257,7 @@ function Dashboard() {
 
   const tabs = [
     { id: "profile", label: "Profile" },
+    { id: "help", label: "Help" },
     { id: "scan", label: "Scan Vehicle" },
     { id: "add", label: "Add Vehicle" },
     { id: "myvehicles", label: "My Vehicles" },
@@ -258,6 +328,98 @@ function Dashboard() {
         <p><strong>Postal Code:</strong> {user.postal_code || "-"}</p>
         </div>
       </>
+      )}
+
+      {activeTab === "help" && (
+        <div>
+          <h3>Help & Support</h3>
+          <div style={{ marginBottom: 16, maxWidth: 600 }}>
+            <label>
+              Email:
+              <input
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                style={{ width: "100%", padding: 8, marginTop: 4, marginBottom: 12 }}
+              />
+            </label>
+            <label>
+              Mobile Number:
+              <input
+                type="text"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                style={{ width: "100%", padding: 8, marginTop: 4, marginBottom: 12 }}
+              />
+            </label>
+            <label>
+              Short Description:
+              <input
+                type="text"
+                value={helpDescription}
+                onChange={(e) => setHelpDescription(e.target.value)}
+                style={{ width: "100%", padding: 8, marginTop: 4, marginBottom: 12 }}
+              />
+            </label>
+            <label>
+              Detail Description:
+              <textarea
+                value={helpDetailDescription}
+                onChange={(e) => setHelpDetailDescription(e.target.value)}
+                rows={6}
+                style={{ width: "100%", padding: 8, marginTop: 4, marginBottom: 12 }}
+              />
+            </label>
+            <button onClick={handleRaiseHelpIssue} style={{ padding: "10px 16px" }}>
+              Submit Help Request
+            </button>
+          </div>
+
+          <div style={{ maxWidth: 800 }}>
+            <h4>Your Raised Issues</h4>
+            {helpLoading ? (
+              <p>Loading your help requests...</p>
+            ) : helpRequests.length === 0 ? (
+              <p>No help requests submitted yet.</p>
+            ) : (
+              helpRequests.map((issue) => {
+                const badgeColor = issue.status === "Open"
+                  ? "#ffeb3b"
+                  : issue.status === "In progress"
+                  ? "#90caf9"
+                  : issue.status === "Resolved"
+                  ? "#a5d6a7"
+                  : issue.status === "Cancelled"
+                  ? "#ef9a9a"
+                  : "#e0e0e0";
+
+                return (
+                  <div key={issue.id} style={{ border: "1px solid #ccc", padding: 12, marginBottom: 12, borderRadius: 4 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                      <p><strong>Issue #{issue.id}</strong></p>
+                      <span
+                        style={{
+                          background: badgeColor,
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {issue.status}
+                      </span>
+                    </div>
+                    <p><strong>Description:</strong> {issue.description}</p>
+                    <p><strong>Details:</strong> {issue.detail_description || "-"}</p>
+                    <p><strong>Contact Email:</strong> {issue.contact_email || "-"}</p>
+                    <p><strong>Contact Phone:</strong> {issue.contact_phone || "-"}</p>
+                    <p><strong>Submitted At:</strong> {issue.created_at ? new Date(issue.created_at).toLocaleString() : "-"}</p>
+                    <p><strong>Last Updated:</strong> {issue.updated_at ? new Date(issue.updated_at).toLocaleString() : "-"}</p>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       )}
 
       {activeTab === "scan" && (

@@ -26,9 +26,10 @@ app.use("/users", userRoutes);
 
 const vehicleRoutes = require("./routes/vehicleRoutes");
 app.use("/vehicles", vehicleRoutes);
- 
 
- 
+const helpRoutes = require("./routes/helpRoutes");
+app.use("/help", helpRoutes);
+
 const PORT = process.env.PORT || 5000;
  
 app.listen(PORT, () => {
