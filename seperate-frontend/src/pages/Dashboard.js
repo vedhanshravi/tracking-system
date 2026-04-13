@@ -25,6 +25,16 @@ function Dashboard() {
   const [helpDetailDescription, setHelpDetailDescription] = useState("");
   const [helpRequests, setHelpRequests] = useState([]);
   const [helpLoading, setHelpLoading] = useState(false);
+  const [helpTab, setHelpTab] = useState("All");
+
+  const helpCounts = {
+    All: helpRequests.length,
+    Open: helpRequests.filter((issue) => issue.status === "Open").length,
+    "In progress": helpRequests.filter((issue) => issue.status === "In progress").length,
+    Resolved: helpRequests.filter((issue) => issue.status === "Resolved").length,
+    Cancelled: helpRequests.filter((issue) => issue.status === "Cancelled").length,
+  };
+
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
@@ -377,46 +387,67 @@ function Dashboard() {
 
           <div style={{ maxWidth: 800 }}>
             <h4>Your Raised Issues</h4>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              {['All', 'Open', 'In progress', 'Resolved', 'Cancelled'].map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setHelpTab(status)}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: 4,
+                    border: helpTab === status ? "1px solid #007bff" : "1px solid #ccc",
+                    background: helpTab === status ? "#007bff" : "#f8f9fa",
+                    color: helpTab === status ? "white" : "black",
+                    cursor: "pointer",
+                  }}
+                >
+                  {status} ({helpCounts[status]})
+                </button>
+              ))}
+            </div>
             {helpLoading ? (
               <p>Loading your help requests...</p>
             ) : helpRequests.length === 0 ? (
               <p>No help requests submitted yet.</p>
             ) : (
-              helpRequests.map((issue) => {
-                const badgeColor = issue.status === "Open"
-                  ? "#ffeb3b"
-                  : issue.status === "In progress"
-                  ? "#90caf9"
-                  : issue.status === "Resolved"
-                  ? "#a5d6a7"
-                  : issue.status === "Cancelled"
-                  ? "#ef9a9a"
-                  : "#e0e0e0";
+              helpRequests
+                .filter((issue) => helpTab === 'All' || issue.status === helpTab)
+                .map((issue) => {
+                  const badgeColor = issue.status === "Open"
+                    ? "#ffeb3b"
+                    : issue.status === "In progress"
+                    ? "#90caf9"
+                    : issue.status === "Resolved"
+                    ? "#a5d6a7"
+                    : issue.status === "Cancelled"
+                    ? "#ef9a9a"
+                    : "#e0e0e0";
 
-                return (
-                  <div key={issue.id} style={{ border: "1px solid #ccc", padding: 12, marginBottom: 12, borderRadius: 4 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-                      <p><strong>Issue #{issue.id}</strong></p>
-                      <span
-                        style={{
-                          background: badgeColor,
-                          padding: "4px 10px",
-                          borderRadius: 999,
-                          fontWeight: 600,
-                        }}
-                      >
-                        {issue.status}
-                      </span>
+                  return (
+                    <div key={issue.id} style={{ border: "1px solid #ccc", padding: 12, marginBottom: 12, borderRadius: 4 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                        <p><strong>Issue #{issue.id}</strong></p>
+                        <span
+                          style={{
+                            background: badgeColor,
+                            padding: "4px 10px",
+                            borderRadius: 999,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {issue.status}
+                        </span>
+                      </div>
+                      <p><strong>Description:</strong> {issue.description}</p>
+                      <p><strong>Details:</strong> {issue.detail_description || "-"}</p>
+                      <p><strong>Contact Email:</strong> {issue.contact_email || "-"}</p>
+                      <p><strong>Contact Phone:</strong> {issue.contact_phone || "-"}</p>
+                      <p><strong>Submitted At:</strong> {issue.created_at ? new Date(issue.created_at).toLocaleString() : "-"}</p>
+                      <p><strong>Last Updated:</strong> {issue.updated_at ? new Date(issue.updated_at).toLocaleString() : "-"}</p>
                     </div>
-                    <p><strong>Description:</strong> {issue.description}</p>
-                    <p><strong>Details:</strong> {issue.detail_description || "-"}</p>
-                    <p><strong>Contact Email:</strong> {issue.contact_email || "-"}</p>
-                    <p><strong>Contact Phone:</strong> {issue.contact_phone || "-"}</p>
-                    <p><strong>Submitted At:</strong> {issue.created_at ? new Date(issue.created_at).toLocaleString() : "-"}</p>
-                    <p><strong>Last Updated:</strong> {issue.updated_at ? new Date(issue.updated_at).toLocaleString() : "-"}</p>
-                  </div>
-                );
-              })
+                  );
+                })
             )}
           </div>
         </div>
