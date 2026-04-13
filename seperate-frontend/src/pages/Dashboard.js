@@ -317,20 +317,24 @@ function Dashboard() {
               className="dashboard-avatar-button"
               onClick={() => {
                 setShowProfile((open) => !open);
-                setActiveTab("profile");
               }}
             >
               <div className="dashboard-avatar">{getUserFullName ? getUserFullName.split(" ").map((n) => n[0]).slice(0,2).join("") : "JD"}</div>
             </button>
             <div className={`dashboard-profile-dropdown ${showProfile ? "open" : ""}`}>
-              <p className="badge">Profile</p>
+              <p className="badge">Account</p>
               <p style={{ margin: "14px 0 4px", fontWeight: 700 }}>{getUserFullName || "User"}</p>
               <p style={{ margin: "0 0 12px", color: "#94a3b8" }}>{user.email || "No email"}</p>
-              <div style={{ display: "grid", gap: "10px", marginBottom: "16px" }}>
-                <div><strong>Status:</strong> {user.subscription_active === false ? "Expired" : user.subscription_active === true ? "Active" : "Unknown"}</div>
-                <div><strong>Vehicles:</strong> {totalVehicles}</div>
-                <div><strong>Scans:</strong> {totalScans}</div>
-              </div>
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => {
+                  setActiveTab("profile");
+                  setShowProfile(false);
+                }}
+              >
+                Profile
+              </button>
               <button className="danger-btn" type="button" onClick={handleLogout}>Sign out</button>
             </div>
           </div>
