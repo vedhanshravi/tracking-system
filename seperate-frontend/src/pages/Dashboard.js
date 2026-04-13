@@ -284,18 +284,7 @@ function Dashboard() {
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
         <div className="dashboard-brand">
-          <div className="dashboard-brand-icon">
-            <svg width="36" height="28" viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 16H33L31 11C30.4477 9.44772 29.5523 8 28.5 8H8.5C7.44772 8 6.55228 9.44772 6 11L3 16Z" fill="#EF4444"/>
-              <path d="M5 16H31L27 22H9L5 16Z" fill="#DC2626"/>
-              <path d="M9 22C7.89543 22 7 21.1046 7 20C7 18.8954 7.89543 18 9 18C10.1046 18 11 18.8954 11 20C11 21.1046 10.1046 22 9 22Z" fill="#111827"/>
-              <path d="M27 22C25.8954 22 25 21.1046 25 20C25 18.8954 25.8954 18 27 18C28.1046 18 29 18.8954 29 20C29 21.1046 28.1046 22 27 22Z" fill="#111827"/>
-              <path d="M9.5 19.5C8.67157 19.5 8 18.8284 8 18C8 17.1716 8.67157 16.5 9.5 16.5C10.3284 16.5 11 17.1716 11 18C11 18.8284 10.3284 19.5 9.5 19.5Z" fill="#F8FAFC"/>
-              <path d="M26.5 19.5C25.6716 19.5 25 18.8284 25 18C25 17.1716 25.6716 16.5 26.5 16.5C27.3284 16.5 28 17.1716 28 18C28 18.8284 27.3284 19.5 26.5 19.5Z" fill="#F8FAFC"/>
-              <path d="M11 12H25V14H11V12Z" fill="#FDE68A"/>
-              <path d="M11 10H25L22 7H13L11 10Z" fill="#991B1B"/>
-            </svg>
-          </div>
+          <div className="dashboard-brand-icon">TP</div>
           <div>
             <div className="dashboard-brand-title">TrackPro</div>
             <div className="dashboard-brand-subtitle">Vehicle tracking</div>
