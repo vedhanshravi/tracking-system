@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [vehicleNumber, setVehicleNumber] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
 
   const getUserFullName = user
     ? `${user.first_name || ""}${user.middle_name ? ` ${user.middle_name}` : ""}${user.last_name ? ` ${user.last_name}` : ""}`.trim()
@@ -37,7 +38,7 @@ function Dashboard() {
 
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState("help");
   const navigate = useNavigate();
 
   const fetchVehicles = async () => {
@@ -266,7 +267,6 @@ function Dashboard() {
   if (!user) return <p>Loading...</p>;
 
   const tabs = [
-    { id: "profile", label: "Profile" },
     { id: "help", label: "Help" },
     { id: "scan", label: "Scan Vehicle" },
     { id: "add", label: "Add Vehicle" },
@@ -274,6 +274,7 @@ function Dashboard() {
     { id: "analytics", label: "Scan Analytics" },
   ];
 
+  const pageTitle = activeTab === "profile" ? "Profile" : tabs.find((tab) => tab.id === activeTab)?.label;
   const totalScans = stats.reduce((sum, item) => sum + (Number(item.total_scans) || 0), 0);
   const totalVehicles = vehicles.length;
 
@@ -311,7 +312,26 @@ function Dashboard() {
 
           <div className="dashboard-actions">
             <button className="outline-btn" type="button">Notifications</button>
-            <div className="dashboard-avatar">{getUserFullName ? getUserFullName.split(" ").map((n) => n[0]).slice(0,2).join("") : "JD"}</div>
+            <button
+              type="button"
+              className="dashboard-avatar-button"
+              onClick={() => {
+                setShowProfile((open) => !open);
+                setActiveTab("profile");
+              }}
+            >
+              <div className="dashboard-avatar">{getUserFullName ? getUserFullName.split(" ").map((n) => n[0]).slice(0,2).join("") : "JD"}</div>
+            </button>
+            <div className={`dashboard-profile-dropdown ${showProfile ? "open" : ""}`}>
+              <p className="badge">Profile</p>
+              <p style={{ margin: "14px 0 4px", fontWeight: 700 }}>{getUserFullName || "User"}</p>
+              <p style={{ margin: "0 0 12px", color: "#94a3b8" }}>{user.email || "No email"}</p>
+              <div style={{ display: "grid", gap: "10px" }}>
+                <div><strong>Status:</strong> {user.subscription_active === false ? "Expired" : user.subscription_active === true ? "Active" : "Unknown"}</div>
+                <div><strong>Vehicles:</strong> {totalVehicles}</div>
+                <div><strong>Scans:</strong> {totalScans}</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -345,7 +365,7 @@ function Dashboard() {
         <div className="page-card">
           <div className="page-hero" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div>
-              <h2 className="page-title">{tabs.find((tab) => tab.id === activeTab)?.label}</h2>
+              <h2 className="page-title">{pageTitle}</h2>
               <p className="page-subtitle">Quick actions and details for the selected dashboard section.</p>
             </div>
           </div>

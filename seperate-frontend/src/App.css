@@ -402,6 +402,14 @@ body {
   display: flex;
   align-items: center;
   gap: 14px;
+  position: relative;
+}
+
+.dashboard-avatar-button {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
 }
 
 .dashboard-avatar {
@@ -413,7 +421,29 @@ body {
   place-items: center;
   color: white;
   font-weight: 700;
-  cursor: default;
+}
+
+.dashboard-profile-dropdown {
+  display: none;
+  position: absolute;
+  top: 70px;
+  right: 0;
+  width: 320px;
+  padding: 20px;
+  border-radius: 20px;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 28px 48px rgba(0, 0, 0, 0.22);
+  color: var(--text);
+  z-index: 15;
+}
+
+.dashboard-profile-dropdown.open {
+  display: grid;
+}
+
+.dashboard-profile-dropdown .badge {
+  margin-bottom: 12px;
 }
 
 .dashboard-welcome-card {
