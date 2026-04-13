@@ -371,25 +371,78 @@ function Dashboard() {
           </div>
 
           {activeTab === "profile" && (
-            <div style={{ display: "grid", gap: 18 }}>
-              <p><strong>First Name:</strong> {user.first_name || "-"}</p>
-              <p><strong>Middle Name:</strong> {user.middle_name || "-"}</p>
-              <p><strong>Last Name:</strong> {user.last_name || "-"}</p>
-              <p><strong>Email:</strong> {user.email || "-"}</p>
-              <p><strong>Subscription Type:</strong> {user.subscription_name || "-"}</p>
-              <p><strong>Subscription Start:</strong> {user.subscription_start ? formatDate(user.subscription_start) : "Not set"}</p>
-              <p><strong>Subscription End:</strong> {user.subscription_end ? formatDate(user.subscription_end) : "Not set"}</p>
-              <p><strong>Subscription Status:</strong> {user.subscription_active === false ? "Expired" : user.subscription_active === true ? "Active" : "Unknown"}</p>
-              <p><strong>Max Vehicles:</strong> {user.max_vehicles || "-"}</p>
-              <p><strong>Phone:</strong> {user.phone || "-"}</p>
-              <p><strong>Alternate Phone:</strong> {user.alternate_phone || "-"}</p>
-              <p><strong>Address Line 1:</strong> {user.address_line1 || "-"}</p>
-              <p><strong>Address Line 2:</strong> {user.address_line2 || "-"}</p>
-              <p><strong>City:</strong> {user.city || "-"}</p>
-              <p><strong>State:</strong> {user.state || "-"}</p>
-              <p><strong>Country:</strong> {user.country || "-"}</p>
-              <p><strong>Postal Code:</strong> {user.postal_code || "-"}</p>
-            </div>
+            <section className="profile-section">
+              <div className="profile-summary-card">
+                <p className="badge">Profile overview</p>
+                <h3 className="profile-name">{getUserFullName || "Anonymous User"}</h3>
+                <p className="profile-email">{user.email || "No email available"}</p>
+                <div className="profile-meta">
+                  <span className={`pill ${user.subscription_active === false ? "pill-danger" : "pill-success"}`}>
+                    {user.subscription_active === false ? "Expired" : "Active"}
+                  </span>
+                  <span className="pill">{user.subscription_name || "Standard"}</span>
+                </div>
+              </div>
+
+              <div className="profile-grid">
+                <div className="profile-item">
+                  <span className="profile-key">First Name</span>
+                  <span className="profile-value">{user.first_name || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Middle Name</span>
+                  <span className="profile-value">{user.middle_name || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Last Name</span>
+                  <span className="profile-value">{user.last_name || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Subscription Start</span>
+                  <span className="profile-value">{user.subscription_start ? formatDate(user.subscription_start) : "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Subscription End</span>
+                  <span className="profile-value">{user.subscription_end ? formatDate(user.subscription_end) : "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Max Vehicles</span>
+                  <span className="profile-value">{user.max_vehicles || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Phone</span>
+                  <span className="profile-value">{user.phone || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Alternate Phone</span>
+                  <span className="profile-value">{user.alternate_phone || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Address Line 1</span>
+                  <span className="profile-value">{user.address_line1 || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Address Line 2</span>
+                  <span className="profile-value">{user.address_line2 || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">City</span>
+                  <span className="profile-value">{user.city || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">State</span>
+                  <span className="profile-value">{user.state || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Country</span>
+                  <span className="profile-value">{user.country || "-"}</span>
+                </div>
+                <div className="profile-item">
+                  <span className="profile-key">Postal Code</span>
+                  <span className="profile-value">{user.postal_code || "-"}</span>
+                </div>
+              </div>
+            </section>
           )}
 
           {activeTab === "help" && (
