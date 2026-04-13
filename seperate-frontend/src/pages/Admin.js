@@ -14,6 +14,8 @@ function Admin() {
   const [totalPages, setTotalPages] = useState(1);
   const [vehicleNumberSearch, setVehicleNumberSearch] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [user, setUser] = useState(null);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
@@ -76,13 +78,35 @@ function Admin() {
     }
   }, [token]);
 
+  const fetchUser = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/me`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        setUser(null);
+        return;
+      }
+      const userData = await response.json();
+      setUser(userData);
+    } catch (err) {
+      console.error(err);
+      setUser(null);
+    }
+  }, [token]);
+
   useEffect(() => {
     if (!token) {
       navigate("/admin-login");
       return;
     }
     fetchDocumentVehicles();
-  }, [navigate, token, fetchDocumentVehicles]);
+    fetchUser();
+  }, [navigate, token, fetchDocumentVehicles, fetchUser]);
 
   useEffect(() => {
     if (token) {
@@ -194,7 +218,27 @@ function Admin() {
             <h2 className="page-title">Admin Dashboard</h2>
             <p className="page-subtitle">Review submitted documents and manage support issues for the tracking platform.</p>
           </div>
-          <button className="danger-btn" type="button" onClick={handleLogout}>Logout</button>
+          <div className="dashboard-actions">
+            <button
+              type="button"
+              className="dashboard-avatar-button"
+              onClick={() => setShowAccountMenu((open) => !open)}
+            >
+              <div className="dashboard-avatar">
+                {user ? user.first_name?.[0]?.toUpperCase() + (user.last_name?.[0]?.toUpperCase() || "") : "AD"}
+              </div>
+            </button>
+            <div className={`dashboard-profile-dropdown ${showAccountMenu ? "open" : ""}`}>
+              <p className="badge">Executive</p>
+              <p style={{ margin: "14px 0 4px", fontWeight: 700 }}>{user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "Admin"}</p>
+              <p style={{ margin: "0 0 12px", color: "#94a3b8" }}>{user?.email || "No email"}</p>
+              <div style={{ display: "grid", gap: "10px", marginBottom: "16px" }}>
+                <div><strong>Role:</strong> {user?.role || "Admin"}</div>
+                <div><strong>Status:</strong> Active</div>
+              </div>
+              <button className="danger-btn" type="button" onClick={handleLogout}>Logout</button>
+            </div>
+          </div>
         </div>
 
         {error && <p className="alert-banner">{error}</p>}
