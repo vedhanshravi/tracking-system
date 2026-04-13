@@ -275,9 +275,8 @@ function Dashboard() {
   ];
 
   const pageTitle = activeTab === "profile" ? "Profile" : tabs.find((tab) => tab.id === activeTab)?.label;
-  const profileFullName = user
-    ? `${user.first_name || "Empty String"} ++ ${user.middle_name || "Empty String"} ++ ${user.last_name || "Empty String"}`
-    : "Empty String ++ Empty String ++ Empty String";
+  const nameParts = [user?.first_name, user?.middle_name, user?.last_name].map((value) => value?.trim() || "");
+  const profileFullName = nameParts.every((part) => part === "") ? "User" : nameParts.join(" ++ ");
   const totalScans = stats.reduce((sum, item) => sum + (Number(item.total_scans) || 0), 0);
   const totalVehicles = vehicles.length;
 
