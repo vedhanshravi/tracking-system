@@ -187,35 +187,33 @@ function Admin() {
   };
 
   return (
-    <div style={{ padding: "50px" }}>
-      <h2>Admin Page</h2>
-      <button onClick={handleLogout}>Logout</button>
-      <hr />
+    <div className="page-container">
+      <div className="page-card">
+        <div className="page-hero" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div>
+            <h2 className="page-title">Admin Dashboard</h2>
+            <p className="page-subtitle">Review submitted documents and manage support issues for the tracking platform.</p>
+          </div>
+          <button className="danger-btn" type="button" onClick={handleLogout}>Logout</button>
+        </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p className="alert-banner">{error}</p>}
 
-      <div style={{ marginBottom: "16px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
-        {[
-          { id: "documents", label: "Document Verification" },
-          { id: "help", label: "Help Requests" },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveAdminTab(tab.id)}
-            style={{
-              padding: "8px 16px",
-              borderRadius: 4,
-              border: activeAdminTab === tab.id ? "1px solid #007bff" : "1px solid #ccc",
-              background: activeAdminTab === tab.id ? "#007bff" : "#f8f9fa",
-              color: activeAdminTab === tab.id ? "white" : "black",
-              cursor: "pointer",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        <div className="tab-list" style={{ marginBottom: "16px" }}>
+          {[
+            { id: "documents", label: "Document Verification" },
+            { id: "help", label: "Help Requests" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`tab-btn ${activeAdminTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveAdminTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
       {activeAdminTab === "documents" ? (
         <>
@@ -391,6 +389,7 @@ function Admin() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

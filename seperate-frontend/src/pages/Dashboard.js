@@ -274,48 +274,29 @@ function Dashboard() {
     { id: "analytics", label: "Scan Analytics" },
   ];
 
-  const tabButtonStyle = (tabId) => ({
-    padding: "10px 16px",
-    border: "1px solid #ccc",
-    background: activeTab === tabId ? "#007bff" : "white",
-    color: activeTab === tabId ? "white" : "black",
-    cursor: "pointer",
-    borderRadius: 4,
-    marginRight: 8,
-    marginBottom: 16,
-  });
-
   return (
-    <div style={{ padding: "50px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ margin: 0 }}>Welcome, {getUserFullName || "User"}!</h2>
-        <button
-          type="button"
-          onClick={handleLogout}
-          style={{
-            padding: "10px 16px",
-            background: "#d9534f",
-            color: "white",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Logout
-        </button>
-      </div>
-      <div style={{ margin: "20px 0" }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            style={tabButtonStyle(tab.id)}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <div className="page-container">
+      <div className="page-card">
+        <div className="page-hero" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div>
+            <h2 className="page-title">Welcome, {getUserFullName || "User"}!</h2>
+            <p className="page-subtitle">Manage your profile, scans, and help requests from one central dashboard.</p>
+          </div>
+          <button className="danger-btn" type="button" onClick={handleLogout}>Logout</button>
+        </div>
+
+        <div className="tab-list" style={{ margin: "20px 0" }}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`tab-btn ${activeTab === tab.id ? "active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       {activeTab === "profile" && (
         <>
           <div style={{ marginBottom: 20 }}>
@@ -491,7 +472,7 @@ function Dashboard() {
               style={{ marginLeft: 8, cursor: "help", fontSize: "0.85rem", opacity: 0.7 }}
               title="Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB."
             >
-              ℹ️
+              â„¹ï¸
             </span>
           </span>
           <input
@@ -509,7 +490,7 @@ function Dashboard() {
               style={{ marginLeft: 8, cursor: "help", fontSize: "0.85rem", opacity: 0.7 }}
               title="Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB."
             >
-              ℹ️
+              â„¹ï¸
             </span>
           </span>
           <input
@@ -600,8 +581,11 @@ function Dashboard() {
       ))}
         </div>
       )}
+      </div>
     </div>
   );
 }
 
 export default Dashboard;
+
+

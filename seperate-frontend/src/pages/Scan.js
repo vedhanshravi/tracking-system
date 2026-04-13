@@ -10,16 +10,13 @@ function Scan() {
   useEffect(() => {
     const fetchVehicle = async () => {
       try {
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL}/vehicles/scan`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ vehicleNumber }),
-          }
-        );
+        const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/scan`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ vehicleNumber }),
+        });
 
         const data = await response.json();
 
@@ -29,7 +26,6 @@ function Scan() {
         }
 
         setOwner(data);
-
       } catch (err) {
         setError("Server error");
       }
@@ -51,51 +47,42 @@ function Scan() {
   };
 
   return (
-    <div style={{ padding: "50px" }}>
-      <h2>Vehicle Information</h2>
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {owner && (
-        <div>
-          <p><strong>Name:</strong> {owner.ownerName}</p>
-          <p><strong>Owner Contact:</strong> {owner.phone}</p>
-
-          <button
-            onClick={() => startCall("owner")}
-            style={{ marginTop: "10px", display: "block", marginBottom: "10px" }}
-          >
-            📞 Parking issues - Call Owner
-          </button>
-
-          <button
-            onClick={() => startCall("emergency")}
-            disabled={!owner.emergencyContact}
-            style={{ marginBottom: "10px" }}
-          >
-            🚑 Medical Emergency - Call Emergency Contact
-          </button>
-
-          {owner.emergencyContact && (
-            <p><strong>Emergency Contact:</strong> {maskPhone(owner.emergencyContact)}</p>
-          )}
-
-          {owner.latitude && owner.longitude && (
-            <div style={{ marginTop: "10px" }}>
-              <p>
-                <strong>Location:</strong> {owner.latitude}, {owner.longitude}
-              </p>
-              <a
-                href={owner.mapUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open route in Maps
-              </a>
-            </div>
-          )}
+    <div className="page-container">
+      <div className="page-card" style={{ maxWidth: 760, margin: "0 auto" }}>
+        <div className="page-hero">
+          <div>
+            <h2 className="page-title">Vehicle Information</h2>
+            <p className="page-subtitle">Check owner contact details, emergency contacts, and route information quickly from the scan results.</p>
+          </div>
         </div>
-      )}
+
+        {error && <p className="alert-banner">{error}</p>}
+
+        {owner ? (
+          <div className="form-grid">
+            <div className="help-card">
+              <p><strong>Name:</strong> {owner.ownerName}</p>
+              <p><strong>Owner Contact:</strong> {owner.phone}</p>
+              {owner.emergencyContact && <p><strong>Emergency Contact:</strong> {maskPhone(owner.emergencyContact)}</p>}
+              {owner.latitude && owner.longitude && (
+                <div style={{ marginTop: 12 }}>
+                  <p><strong>Location:</strong> {owner.latitude}, {owner.longitude}</p>
+                  <a href={owner.mapUrl} target="_blank" rel="noopener noreferrer" className="outline-btn" style={{ display: "inline-flex", textDecoration: "none", marginTop: 8 }}>
+                    Open route in Maps
+                  </a>
+                </div>
+              )}
+            </div>
+
+            <div className="button-row" style={{ flexDirection: "column", alignItems: "stretch", marginTop: 8 }}>
+              <button className="primary-btn" onClick={() => startCall("owner")}>📞 Parking issues - Call Owner</button>
+              <button className="secondary-btn" onClick={() => startCall("emergency")} disabled={!owner.emergencyContact}>🚑 Medical Emergency - Call Emergency Contact</button>
+            </div>
+          </div>
+        ) : (
+          !error && <p className="page-subtitle">Loading vehicle information...</p>
+        )}
+      </div>
     </div>
   );
 }

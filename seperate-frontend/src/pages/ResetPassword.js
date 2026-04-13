@@ -79,54 +79,72 @@ function ResetPassword() {
   };
 
   return (
-    <div style={{ padding: "50px" }}>
-      <h2>Password Reset</h2>
+    <div className="page-container">
+      <div className="page-card" style={{ maxWidth: 560, margin: "0 auto" }}>
+        <div className="page-hero">
+          <div>
+            <h2 className="page-title">Reset Your Password</h2>
+            <p className="page-subtitle">Securely reset your account using the OTP sent to your registered mobile number.</p>
+          </div>
+        </div>
 
-      <label style={{ display: "block", margin: "10px 0 5px" }}>Mobile Number:</label>
-      <input
-        placeholder="Enter your registered mobile number"
-        value={phone}
-        onChange={(e) => setPhone(e.target.value)}
-      />
+        <div className="form-grid">
+          <div className="form-group">
+            <label className="form-label">Mobile Number</label>
+            <input
+              className="input-field"
+              placeholder="Enter your registered mobile number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
 
-      {!otpSent ? (
-        <>
-          <button style={{ marginTop: 20 }} onClick={handleSendOtp} disabled={loading}>
-            {loading ? "Sending OTP..." : "Send OTP"}
-          </button>
-        </>
-      ) : (
-        <>
-          <label style={{ display: "block", margin: "10px 0 5px" }}>OTP:</label>
-          <input
-            placeholder="Enter OTP"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>New Password:</label>
-          <input
-            type="password"
-            placeholder="Enter new password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-          />
-          <label style={{ display: "block", margin: "10px 0 5px" }}>Confirm Password:</label>
-          <input
-            type="password"
-            placeholder="Confirm new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-          <button style={{ marginTop: 20 }} onClick={handleReset} disabled={loading}>
-            {loading ? "Resetting..." : "Reset Password"}
-          </button>
-        </>
-      )}
+          {!otpSent ? (
+            <button className="primary-btn" onClick={handleSendOtp} disabled={loading}>
+              {loading ? "Sending OTP..." : "Send OTP"}
+            </button>
+          ) : (
+            <>
+              <div className="form-group">
+                <label className="form-label">OTP</label>
+                <input
+                  className="input-field"
+                  placeholder="Enter OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">New Password</label>
+                <input
+                  className="input-field"
+                  type="password"
+                  placeholder="Enter new password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Confirm Password</label>
+                <input
+                  className="input-field"
+                  type="password"
+                  placeholder="Confirm new password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+              <button className="primary-btn" onClick={handleReset} disabled={loading}>
+                {loading ? "Resetting..." : "Reset Password"}
+              </button>
+            </>
+          )}
 
-      {message && <p style={{ marginTop: 20 }}>{message}</p>}
-      <p style={{ marginTop: 20 }}>
-        <button onClick={() => navigate("/")}>Back to Login</button>
-      </p>
+          {message && <p style={{ marginTop: 8, color: "var(--muted)" }}>{message}</p>}
+
+          <button className="link-btn" type="button" onClick={() => navigate("/")}>Back to Login</button>
+        </div>
+      </div>
     </div>
   );
 }
