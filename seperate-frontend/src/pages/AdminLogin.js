@@ -4,9 +4,11 @@ import { useNavigate } from "react-router-dom";
 function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async () => {
+    setError("");
     const response = await fetch(`${process.env.REACT_APP_API_URL}/users/login`, {
       method: "POST",
       headers: {
@@ -18,7 +20,7 @@ function AdminLogin() {
     const data = await response.json();
 
     if (!data.token) {
-      alert("Admin login failed");
+      setError("Admin login failed. Please verify your credentials.");
       return;
     }
 
@@ -36,7 +38,7 @@ function AdminLogin() {
       navigate("/admin");
     } else {
       localStorage.removeItem("token");
-      alert("Admin access denied");
+      setError("Admin access denied. You do not have executive access.");
     }
   };
 
@@ -47,6 +49,7 @@ function AdminLogin() {
           <div>
             <h2 className="page-title">Executive Login</h2>
             <p className="page-subtitle">Enter your account credentials to manage vehicle verification and support requests.</p>
+            {error && <div className="alert-banner" style={{ marginTop: 18 }}>{error}</div>}
           </div>
         </div>
 
