@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Admin() {
-  const [pendingVehicles, setPendingVehicles] = useState([]);
+  const [documentVehicles, setDocumentVehicles] = useState([]);
   const [helpIssues, setHelpIssues] = useState([]);
   const [helpError, setHelpError] = useState("");
   const [helpLoading, setHelpLoading] = useState(false);
@@ -17,32 +17,38 @@ function Admin() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  const fetchPendingVehicles = useCallback(async (pageNumber = 1, searchText = "") => {
+  const fetchDocumentVehicles = useCallback(async (pageNumber = 1, searchText = "", status = documentFilterStatus) => {
     try {
-      const query = searchText
-        ? `vehicleNumber=${encodeURIComponent(searchText)}`
-        : `page=${pageNumber}`;
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/pending?${query}`, {
+      const query = [];
+      if (searchText) {
+        query.push(`vehicleNumber=${encodeURIComponent(searchText)}`);
+      }
+      if (status && status !== "All") {
+        query.push(`status=${encodeURIComponent(status)}`);
+      }
+      query.push(`page=${pageNumber}`);
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/all?${query.join("&")}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       if (!response.ok) {
         const data = await response.json();
-        setError(data.message || "Failed to load pending vehicles");
-        setPendingVehicles([]);
+        setError(data.message || "Failed to load document vehicles");
+        setDocumentVehicles([]);
         return;
       }
       const result = await response.json();
-      setPendingVehicles(result.data || []);
+      setDocumentVehicles(result.data || []);
       setPage(result.page || 1);
       setTotalPages(result.totalPages || 1);
       setError("");
     } catch (err) {
-      setError("Server error while loading pending vehicles");
-      setPendingVehicles([]);
+      setError("Server error while loading document vehicles");
+      setDocumentVehicles([]);
     }
-  }, [token]);
+  }, [token, documentFilterStatus]);
 
   const fetchHelpIssues = useCallback(async () => {
     if (!token) return;
@@ -75,8 +81,8 @@ function Admin() {
       navigate("/admin-login");
       return;
     }
-    fetchPendingVehicles();
-  }, [navigate, token, fetchPendingVehicles]);
+    fetchDocumentVehicles();
+  }, [navigate, token, fetchDocumentVehicles]);
 
   useEffect(() => {
     if (token) {
@@ -110,17 +116,17 @@ function Admin() {
   const handleSearch = async () => {
     if (!vehicleNumberSearch.trim()) {
       setIsSearchActive(false);
-      fetchPendingVehicles(1, "");
+      fetchDocumentVehicles(1, "", documentFilterStatus);
       return;
     }
     setIsSearchActive(true);
-    fetchPendingVehicles(1, vehicleNumberSearch.trim());
+    fetchDocumentVehicles(1, vehicleNumberSearch.trim(), documentFilterStatus);
   };
 
   const clearSearch = () => {
     setVehicleNumberSearch("");
     setIsSearchActive(false);
-    fetchPendingVehicles(1, "");
+    fetchDocumentVehicles(1, "", documentFilterStatus);
   };
 
   const handleVerify = async (vehicleId) => {
@@ -137,7 +143,7 @@ function Admin() {
         return;
       }
       alert("Vehicle verified successfully");
-      fetchPendingVehicles(page);
+      fetchDocumentVehicles(page, "", documentFilterStatus);
     } catch (err) {
       console.error(err);
       alert("Server error during verification");
@@ -253,7 +259,7 @@ function Admin() {
             <div style={{ marginBottom: "12px" }}>
               <button
                 type="button"
-                onClick={() => fetchPendingVehicles(Math.max(page - 1, 1), "")}
+                onClick={() => fetchDocumentVehicles(Math.max(page - 1, 1), "", documentFilterStatus)}
                 disabled={page <= 1}
                 style={{ marginRight: "8px" }}
               >
@@ -261,7 +267,7 @@ function Admin() {
               </button>
               <button
                 type="button"
-                onClick={() => fetchPendingVehicles(Math.min(page + 1, totalPages), "")}
+                onClick={() => fetchDocumentVehicles(Math.min(page + 1, totalPages), "", documentFilterStatus)}
                 disabled={page >= totalPages}
               >
                 Next
@@ -272,22 +278,10 @@ function Admin() {
             </div>
           )}
 
-          {pendingVehicles.length === 0 ? (
-            <p>No vehicles pending verification.</p>
+          {documentVehicles.length === 0 ? (
+            <p>No vehicles found for this status.</p>
           ) : (
-            pendingVehicles
-              .filter((vehicle) => {
-                const verificationStatus = vehicle.verification_status
-                  ? vehicle.verification_status
-                  : vehicle.is_verified
-                  ? "Approved"
-                  : "Pending";
-
-                return (
-                  documentFilterStatus === "All" || verificationStatus === documentFilterStatus
-                );
-              })
-              .map((vehicle) => (
+            documentVehicles.map((vehicle) => (
                 <div key={vehicle.id} style={{ border: "1px solid #ccc", padding: "16px", marginBottom: "16px" }}>
                   <p><strong>Vehicle Number:</strong> {vehicle.vehicle_number}</p>
                   <p><strong>Owner Name:</strong> {vehicle.owner_name}</p>
