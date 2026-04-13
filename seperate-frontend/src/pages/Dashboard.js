@@ -267,11 +267,11 @@ function Dashboard() {
   if (!user) return <p>Loading...</p>;
 
   const tabs = [
-    { id: "help", label: "Help" },
-    { id: "scan", label: "Scan Vehicle" },
-    { id: "add", label: "Add Vehicle" },
     { id: "myvehicles", label: "My Vehicles" },
+    { id: "add", label: "Add Vehicle" },
     { id: "analytics", label: "Scan Analytics" },
+    { id: "scan", label: "Scan Vehicle" },
+    { id: "help", label: "Help" },
   ];
 
   const pageTitle = activeTab === "profile" ? "Profile" : tabs.find((tab) => tab.id === activeTab)?.label;
