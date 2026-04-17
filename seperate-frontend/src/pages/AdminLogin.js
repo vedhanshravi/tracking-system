@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import carLogo from "../trackpro-car.svg";
 
 function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -62,7 +63,9 @@ function AdminLogin() {
       <div className="login-split">
         <section className="login-panel">
           <div className="brand-badge">
-            <div className="brand-logo">🚗</div>
+            <div className="brand-logo">
+              <img src={carLogo} alt="TrackPro logo" className="brand-logo-img" />
+            </div>
             <div className="brand-name">TrackPro</div>
           </div>
 
@@ -73,15 +76,32 @@ function AdminLogin() {
 
           <div className="feature-list">
             <div className="feature-item">
-              <div className="feature-icon">🛡️</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3l6 3v5c0 4.66-3.11 8.95-6 9-2.89-.05-6-4.34-6-9V6l6-3z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                  <path d="M9 12l2 2 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
               <div className="feature-text">Bank-grade security</div>
             </div>
             <div className="feature-item">
-              <div className="feature-icon">🔒</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="6" y="11" width="12" height="8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                  <path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </div>
               <div className="feature-text">Encrypted admin credentials</div>
             </div>
             <div className="feature-item">
-              <div className="feature-icon">📊</div>
+              <div className="feature-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 17v-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <path d="M12 17v-9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <path d="M18 17v-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <path d="M4 19h16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </div>
               <div className="feature-text">Operations & verification control</div>
             </div>
           </div>
