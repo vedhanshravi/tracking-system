@@ -73,9 +73,10 @@ body {
   min-height: 620px;
   border-radius: 36px;
   padding: 42px;
-  background: linear-gradient(180deg, rgba(48, 200, 150, 0.28), rgba(9, 24, 13, 0.98));
+  /* background: linear-gradient(180deg, rgba(48, 200, 150, 0.28), rgba(9, 24, 13, 0.98)); */
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 35px 95px rgba(0, 0, 0, 0.36);
+  background-color: #13a66f;
 }
 
 .brand-badge {
@@ -561,7 +562,21 @@ body {
   color: var(--text);
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text); /* Inherit text color */
+}
+
+
 
 .dashboard-nav-item:hover,
 .dashboard-nav-item.active {
@@ -885,5 +900,91 @@ body {
   .dashboard-welcome-card {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/* @media (max-width: 1024px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sidebar {
+    position: static;
+    min-height: auto;
+  }
+
+  .dashboard-nav {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+
+  .dashboard-nav-item {
+     width: auto;
+    flex: 0 0 auto;
+    min-width: 110px;
+    max-width: 140px;
+    padding: 12px 14px;
+    white-space: nowrap;
+  }
+
+  .dashboard-nav::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .dashboard-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+  }
+
+  .dashboard-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+} */
+
+@media (max-width: 768px) {
+  .dashboard-shell {
+    grid-template-columns: 1fr;
+    overflow-x: hidden;
+  }
+
+  .dashboard-sidebar {
+    position: static;
+    min-height: auto;
+    overflow-x: hidden;
+  }
+
+  .dashboard-nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    width: 100%;
+    gap: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-nav-item {
+    width: auto;
+    flex: 0 0 auto;
+    min-width: 110px;
+    max-width: 140px;
+    padding: 12px 14px;
+    white-space: nowrap;
+  }
+
+  .dashboard-nav::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .dashboard-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+  }
+
+  .dashboard-nav::-webkit-scrollbar-track {
+    background: transparent;
   }
 }

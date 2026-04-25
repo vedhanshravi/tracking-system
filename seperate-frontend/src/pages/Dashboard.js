@@ -38,7 +38,7 @@ function Dashboard() {
 
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
-  const [activeTab, setActiveTab] = useState("help");
+  const [activeTab, setActiveTab] = useState("myvehicles");
   const navigate = useNavigate();
 
   const fetchVehicles = async () => {
@@ -266,13 +266,72 @@ function Dashboard() {
 
   if (!user) return <p>Loading...</p>;
 
-  const tabs = [
-    { id: "myvehicles", label: "My Vehicles" },
-    { id: "add", label: "Add Vehicle" },
-    { id: "analytics", label: "Scan Analytics" },
-    { id: "scan", label: "Scan Vehicle" },
-    { id: "help", label: "Help" },
-  ];
+  // const tabs = [
+  //   { id: "myvehicles", label: "My Vehicles" },
+  //   { id: "add", label: "Add Vehicle" },
+  //   { id: "analytics", label: "Scan Analytics" },
+  //   { id: "scan", label: "Scan Vehicle" },
+  //   { id: "help", label: "Help" },
+  // ];
+  // ...existing code...
+
+// Update the tabs array to include icons (using inline SVGs as examples; replace with your own)
+const tabs = [
+  { 
+    id: "myvehicles", 
+    label: "My Vehicles", 
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-car w-4 h-4" aria-hidden="true"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>
+    ) 
+  },
+  { 
+    id: "add", 
+    label: "Add Vehicle", 
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus w-4 h-4" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+    ) 
+  },
+  { 
+    id: "analytics", 
+    label: "Scan Analytics", 
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-column w-4 h-4" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+    ) 
+  },
+  { 
+    id: "scan", 
+    label: "Scan Vehicle", 
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scan-line w-4 h-4" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M7 12h10"></path></svg>
+    ) 
+  },
+  { 
+    id: "help", 
+    label: "Help", 
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-question-mark w-4 h-4" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
+    ) 
+  },
+];
+
+// ...existing code...
+
+// Update the nav rendering to include the icon
+{/* <nav className="dashboard-nav">
+  {tabs.map((tab) => (
+    <button
+      key={tab.id}
+      type="button"
+      className={`dashboard-nav-item ${activeTab === tab.id ? "active" : ""}`}
+      onClick={() => setActiveTab(tab.id)}
+    >
+      <span className="nav-icon">{tab.icon}</span>
+      {tab.label}
+    </button>
+  ))}
+</nav> */}
+
+// ...existing code...
 
   const pageTitle = activeTab === "profile" ? "Profile" : tabs.find((tab) => tab.id === activeTab)?.label;
   const nameParts = [user?.first_name, user?.middle_name, user?.last_name].map((value) => value?.trim()).filter(Boolean);
@@ -299,6 +358,7 @@ function Dashboard() {
               className={`dashboard-nav-item ${activeTab === tab.id ? "active" : ""}`}
               onClick={() => setActiveTab(tab.id)}
             >
+              <span className="nav-icon">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
