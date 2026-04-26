@@ -4,16 +4,52 @@ const pool = require("../config/db");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 
-async function ensureSoftDeleteColumn() {
+async function ensureSoftDeleteColumns() {
   try {
     await pool.query("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE");
+    await pool.query("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_display_name VARCHAR(255)");
+    await pool.query(`DO $$
+BEGIN
+  ALTER TABLE vehicles ALTER COLUMN vehicle_number DROP NOT NULL;
+EXCEPTION WHEN undefined_column THEN
+  NULL;
+END
+$$;`);
+    await pool.query(`DO $$
+BEGIN
+  ALTER TABLE vehicles ALTER COLUMN rc_document DROP NOT NULL;
+EXCEPTION WHEN undefined_column THEN
+  NULL;
+END
+$$;`);
+    await pool.query(`DO $$
+BEGIN
+  ALTER TABLE vehicles ALTER COLUMN adhar_document DROP NOT NULL;
+EXCEPTION WHEN undefined_column THEN
+  NULL;
+END
+$$;`);
+    await pool.query(`DO $$
+BEGIN
+  ALTER TABLE vehicles ALTER COLUMN rc_document_name DROP NOT NULL;
+EXCEPTION WHEN undefined_column THEN
+  NULL;
+END
+$$;`);
+    await pool.query(`DO $$
+BEGIN
+  ALTER TABLE vehicles ALTER COLUMN adhar_document_name DROP NOT NULL;
+EXCEPTION WHEN undefined_column THEN
+  NULL;
+END
+$$;`);
     await pool.query("UPDATE vehicles SET is_deleted = FALSE WHERE is_deleted IS NULL");
   } catch (err) {
-    console.error("Failed to ensure is_deleted column:", err);
+    console.error("Failed to ensure vehicles columns:", err);
   }
 }
 
-ensureSoftDeleteColumn();
+ensureSoftDeleteColumns();
 const path = require("path");
 const fs = require("fs");
 const { sendSmsMessage, client } = require("../utils/twilioCall");
@@ -184,28 +220,29 @@ router.post("/add", verifyToken, async (req, res, next) => {
     next();
   });
 }, async (req, res) => {
-  const { vehicleNumber, ownerName, ownerPhone, emergencyContact } = req.body;
+    const { vehicleNumber, vehicleDisplayName, ownerName, ownerPhone, emergencyContact } = req.body;
   const rcFile = req.files?.rc?.[0];
   const adharFile = req.files?.adhar?.[0];
 
-  if (!vehicleNumber || !ownerName || !ownerPhone || !emergencyContact || !rcFile || !adharFile) {
-    return res.status(400).json({ message: "All vehicle fields, emergency contact, RC and Aadhar are required" });
+  if (!ownerName || !ownerPhone || !emergencyContact) {
+    return res.status(400).json({ message: "Owner name, phone, and emergency contact are required" });
   }
 
-  if (rcFile.size > MAX_FILE_SIZE || adharFile.size > MAX_FILE_SIZE) {
+  if ((rcFile && rcFile.size > MAX_FILE_SIZE) || (adharFile && adharFile.size > MAX_FILE_SIZE)) {
     return res.status(400).json({ message: "RC and Aadhar documents must be 5MB or smaller" });
   }
 
   try {
     console.log("/vehicles/add requested by user:", req.user);
 
-    const rcFileBuffer = fs.readFileSync(rcFile.path);
-    const adharFileBuffer = fs.readFileSync(adharFile.path);
+    const rcFileBuffer = rcFile ? fs.readFileSync(rcFile.path) : null;
+    const adharFileBuffer = adharFile ? fs.readFileSync(adharFile.path) : null;
 
     await pool.query(
       `INSERT INTO vehicles (
           user_id,
           vehicle_number,
+          vehicle_display_name,
           owner_name,
           owner_phone,
           emergency_contact,
@@ -218,17 +255,18 @@ router.post("/add", verifyToken, async (req, res, next) => {
           is_verified,
           is_deleted
         )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
       [
         req.user.userId || req.user.id,
-        vehicleNumber.toUpperCase(),
+        vehicleNumber ? vehicleNumber.toUpperCase() : null,
+        vehicleDisplayName || null,
         ownerName,
         ownerPhone,
         emergencyContact,
-        rcFile.filename,
-        adharFile.filename,
-        rcFile.originalname,
-        adharFile.originalname,
+        rcFile ? rcFile.filename : null,
+        adharFile ? adharFile.filename : null,
+        rcFile ? rcFile.originalname : null,
+        adharFile ? adharFile.originalname : null,
         rcFileBuffer,
         adharFileBuffer,
         false,
@@ -258,7 +296,7 @@ router.get("/my", verifyToken, async (req, res) => {
     const vehicles = await Promise.all(
       result.rows.map(async (vehicle) => {
         let qrImage = null;
-        if (vehicle.is_verified) {
+        if (vehicle.is_verified && vehicle.vehicle_number) {
           const qrData = `https://tracking-system-liart.vercel.app/scan/${vehicle.vehicle_number}`;
           qrImage = await QRCode.toDataURL(qrData);
         }
@@ -303,6 +341,77 @@ router.patch("/delete/:vehicleId", verifyToken, async (req, res) => {
     );
 
     res.json({ message: "Vehicle deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Update a vehicle for the logged-in user
+router.put("/update/:vehicleId", verifyToken, uploadFields, async (req, res) => {
+  try {
+    const { vehicleId } = req.params;
+    const { vehicleNumber, vehicleDisplayName, ownerName, ownerPhone, emergencyContact } = req.body;
+    const rcFile = req.files?.rc?.[0];
+    const adharFile = req.files?.adhar?.[0];
+
+    const vehicleCheck = await pool.query(
+      "SELECT * FROM vehicles WHERE id = $1 AND COALESCE(is_deleted, false) = false",
+      [vehicleId]
+    );
+
+    if (vehicleCheck.rows.length === 0) {
+      return res.status(404).json({ message: "Vehicle not found" });
+    }
+
+    const vehicle = vehicleCheck.rows[0];
+    if (vehicle.user_id !== (req.user.userId || req.user.id)) {
+      return res.status(403).json({ message: "Not authorized to update this vehicle" });
+    }
+
+    if (!ownerName || !ownerPhone || !emergencyContact) {
+      return res.status(400).json({ message: "Owner name, phone, and emergency contact are required" });
+    }
+
+    if ((rcFile && rcFile.size > MAX_FILE_SIZE) || (adharFile && adharFile.size > MAX_FILE_SIZE)) {
+      return res.status(400).json({ message: "RC and Aadhar documents must be 5MB or smaller" });
+    }
+
+    const rcFileBuffer = rcFile ? fs.readFileSync(rcFile.path) : null;
+    const adharFileBuffer = adharFile ? fs.readFileSync(adharFile.path) : null;
+
+    await pool.query(
+      `UPDATE vehicles SET
+          vehicle_number = $1,
+          vehicle_display_name = $2,
+          owner_name = $3,
+          owner_phone = $4,
+          emergency_contact = $5,
+          rc_document = COALESCE($6, rc_document),
+          adhar_document = COALESCE($7, adhar_document),
+          rc_document_name = COALESCE($8, rc_document_name),
+          adhar_document_name = COALESCE($9, adhar_document_name),
+          rc_document_data = COALESCE($10, rc_document_data),
+          adhar_document_data = COALESCE($11, adhar_document_data)
+        WHERE id = $12`,
+      [
+        vehicleNumber ? vehicleNumber.toUpperCase() : null,
+        vehicleDisplayName || null,
+        ownerName,
+        ownerPhone,
+        emergencyContact,
+        rcFile ? rcFile.filename : null,
+        adharFile ? adharFile.filename : null,
+        rcFile ? rcFile.originalname : null,
+        adharFile ? adharFile.originalname : null,
+        rcFileBuffer,
+        adharFileBuffer,
+        vehicleId,
+      ]
+    );
+
+    res.json({ message: "Vehicle updated successfully" });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

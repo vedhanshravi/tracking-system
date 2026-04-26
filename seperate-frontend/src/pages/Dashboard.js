@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [vehicleNumber, setVehicleNumber] = useState("");
+  const [vehicleDisplayName, setVehicleDisplayName] = useState("");
   const [showProfile, setShowProfile] = useState(false);
 
   const getUserFullName = user
@@ -38,7 +39,8 @@ function Dashboard() {
 
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
-  const [activeTab, setActiveTab] = useState("help");
+  const [activeTab, setActiveTab] = useState("myvehicles");
+  const [editingVehicle, setEditingVehicle] = useState(null);
   const navigate = useNavigate();
 
   const fetchVehicles = async () => {
@@ -71,6 +73,28 @@ function Dashboard() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleEditVehicle = (v) => {
+    setEditingVehicle(v);
+    setVehicleNumber(v.vehicle_number || "");
+    setVehicleDisplayName(v.vehicle_display_name || "");
+    setOwnerName(v.owner_name || "");
+    setOwnerPhone(v.owner_phone || "");
+    setEmergencyContact(v.emergency_contact || "");
+    setRcFile(null);
+    setAdharFile(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingVehicle(null);
+    setVehicleNumber("");
+    setVehicleDisplayName("");
+    setOwnerName("");
+    setOwnerPhone("");
+    setEmergencyContact("");
+    setRcFile(null);
+    setAdharFile(null);
   };
 
   useEffect(() => {
@@ -218,6 +242,45 @@ function Dashboard() {
       setEmergencyContact("");
       setRcFile(null);
       setAdharFile(null);
+      fetchVehicles();
+      fetchStats();
+    }
+  };
+
+  const handleUpdateVehicle = async () => {
+    const token = localStorage.getItem("token");
+    if (!ownerName || !ownerPhone || !emergencyContact) {
+      alert("Please fill required fields: owner name, phone, and emergency contact.");
+      return;
+    }
+
+    const maxFileSize = 5 * 1024 * 1024; // 5MB
+    if ((rcFile && rcFile.size > maxFileSize) || (adharFile && adharFile.size > maxFileSize)) {
+      alert("RC and Aadhar documents must be 5MB or smaller.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("vehicleNumber", vehicleNumber);
+    formData.append("vehicleDisplayName", vehicleDisplayName);
+    formData.append("ownerName", ownerName);
+    formData.append("ownerPhone", ownerPhone);
+    formData.append("emergencyContact", emergencyContact);
+    if (rcFile) formData.append("rc", rcFile);
+    if (adharFile) formData.append("adhar", adharFile);
+
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/update/${editingVehicle.id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    alert(data.message);
+    if (response.ok) {
+      handleCancelEdit();
       fetchVehicles();
       fetchStats();
     }
@@ -568,19 +631,59 @@ function Dashboard() {
           {activeTab === "myvehicles" && (
             <div style={{ display: 'grid', gap: 18 }}>
               <h3>My Vehicles</h3>
-              {vehicles.length === 0 ? (
+              {editingVehicle ? (
+                <div style={{ display: 'grid', gap: 16 }}>
+                  <h4>Edit Vehicle</h4>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label className="form-label">Vehicle Display Name *</label>
+                      <input className="input-field" placeholder="Car Name and Car Number" value={vehicleDisplayName} onChange={(e) => setVehicleDisplayName(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Vehicle Number</label>
+                      <input className="input-field" placeholder="Enter vehicle number" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} />
+                    </div>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label className="form-label">Owner Phone *</label>
+                        <input className="input-field" placeholder="Owner phone" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Emergency Contact *</label>
+                        <input className="input-field" placeholder="Emergency contact" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">RC Document</label>
+                      <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setRcFile(e.target.files[0])} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Aadhar Document</label>
+                      <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setAdharFile(e.target.files[0])} />
+                    </div>
+                    <p className="help-text">Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB. Leave blank to keep existing documents.</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button className="primary-btn" onClick={handleUpdateVehicle}>Update Vehicle</button>
+                    <button className="secondary-btn" onClick={handleCancelEdit}>Cancel</button>
+                  </div>
+                </div>
+              ) : vehicles.length === 0 ? (
                 <p>No vehicles added yet.</p>
               ) : (
                 vehicles.map((v) => (
                   <div key={v.id} className="vehicle-card">
                     <div className="vehicle-card-header">
                       <div>
-                        <p className="vehicle-card-title">{v.vehicle_number || 'Untitled Vehicle'}</p>
+                        <p className="vehicle-card-title">{v.vehicle_display_name || v.vehicle_number || 'Untitled Vehicle'}</p>
                         <p className="vehicle-card-subtitle">Vehicle information and documents</p>
                       </div>
-                      <span className={`pill ${v.is_verified ? 'pill-success' : 'pill-warning'}`}>
-                        {v.is_verified ? 'Verified' : 'Pending approval'}
-                      </span>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <span className={`pill ${v.is_verified ? 'pill-success' : 'pill-warning'}`}>
+                          {v.is_verified ? 'Verified' : 'Pending approval'}
+                        </span>
+                        <button className="secondary-btn" onClick={() => handleEditVehicle(v)}>Edit</button>
+                      </div>
                     </div>
 
                     <div className="vehicle-card-grid">
@@ -617,7 +720,7 @@ function Dashboard() {
                     {v.qr && (
                       <div className="vehicle-card-qr">
                         <img src={v.qr} alt="QR" width={180} />
-                        <a href={v.qr} download={`QR-${v.vehicle_number}.png`}>
+                        <a href={v.qr} download={`QR-${v.vehicle_display_name || v.vehicle_number}.png`}>
                           <button className="secondary-btn" type="button">Download QR</button>
                         </a>
                       </div>
