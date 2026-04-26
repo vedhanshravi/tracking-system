@@ -329,6 +329,36 @@ body {
   box-shadow: 0 0 0 5px rgba(56, 224, 178, 0.26);
 }
 
+.password-input-container {
+  position: relative;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+  color: var(--primary);
+}
+
+.eye-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
 .textarea-field {
   min-height: 120px;
   resize: vertical;
