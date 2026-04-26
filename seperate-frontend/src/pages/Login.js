@@ -93,11 +93,13 @@ function Login() {
             <h1>Welcome back</h1>
             <p className="page-subtitle">Sign in to your account to continue</p>
 
-            <form className="form-grid" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <form autoComplete="off" className="form-grid" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
               {error && <div className="alert-banner" style={{ marginTop: 0 }}>{error}</div>}
               <div className="form-group">
                 <label className="form-label">Email</label>
                 <input
+                  name="email"
+                  autoComplete="off"
                   className="input-field"
                   placeholder="Enter your email"
                   value={email}
@@ -109,6 +111,8 @@ function Login() {
                 <label className="form-label">Password</label>
                 <div className="password-input-container">
                   <input
+                    name="password"
+                    autoComplete="off"
                     className="input-field"
                     placeholder="Enter your password"
                     type={showPassword ? "text" : "password"}

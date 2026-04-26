@@ -19,12 +19,19 @@ function Register() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [subscriptionId, setSubscriptionId] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
+  const [vehicleDisplayName, setVehicleDisplayName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
   const [rcFile, setRcFile] = useState(null);
   const [adharFile, setAdharFile] = useState(null);
   const [step, setStep] = useState(1);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const navigate = useNavigate();
+
+  const handleSuccessOk = () => {
+    setShowSuccessModal(false);
+    navigate("/dashboard");
+  };
 
   const validateStep = (currentStep) => {
     if (currentStep === 1) {
@@ -42,7 +49,7 @@ function Register() {
       );
     }
     if (currentStep === 2) {
-      return vehicleNumber && ownerPhone && emergencyContact && rcFile && adharFile;
+      return vehicleDisplayName && ownerPhone && emergencyContact;
     }
     if (currentStep === 3) {
       return !!subscriptionId;
@@ -94,11 +101,9 @@ function Register() {
       !subscriptionId ||
       !email ||
       !password ||
-      !vehicleNumber ||
+      !vehicleDisplayName ||
       !ownerPhone ||
-      !emergencyContact ||
-      !rcFile ||
-      !adharFile
+      !emergencyContact
     ) {
       alert("Please fill all required fields, including registration and vehicle details.");
       return;
@@ -156,11 +161,12 @@ function Register() {
       const formData = new FormData();
       const fullName = `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`.trim();
       formData.append("vehicleNumber", vehicleNumber);
+      formData.append("vehicleDisplayName", vehicleDisplayName);
       formData.append("ownerName", fullName);
       formData.append("ownerPhone", ownerPhone);
       formData.append("emergencyContact", emergencyContact);
-      formData.append("rc", rcFile);
-      formData.append("adhar", adharFile);
+      if (rcFile) formData.append("rc", rcFile);
+      if (adharFile) formData.append("adhar", adharFile);
 
       const vehicleResp = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/add`, {
         method: "POST",
@@ -177,8 +183,7 @@ function Register() {
         return;
       }
 
-      alert("Registration complete and vehicle uploaded. Waiting for admin verification.");
-      navigate("/dashboard");
+      setShowSuccessModal(true);
     } catch (err) {
       console.error(err);
       alert("Server error");
@@ -283,7 +288,11 @@ function Register() {
         {step === 2 && (
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label">Vehicle Number *</label>
+              <label className="form-label">Vehicle Display Name *</label>
+              <input className="input-field" placeholder="Car Name and Car Number" value={vehicleDisplayName} onChange={(e) => setVehicleDisplayName(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Vehicle Number</label>
               <input className="input-field" placeholder="Enter vehicle number" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} />
             </div>
             <div className="form-grid">
@@ -297,11 +306,11 @@ function Register() {
               </div>
             </div>
             <div className="form-group">
-              <label className="form-label">RC Document *</label>
+              <label className="form-label">RC Document</label>
               <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setRcFile(e.target.files[0])} />
             </div>
             <div className="form-group">
-              <label className="form-label">Aadhar Document *</label>
+              <label className="form-label">Aadhar Document</label>
               <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setAdharFile(e.target.files[0])} />
             </div>
             <p className="help-text">Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB.</p>
@@ -315,7 +324,7 @@ function Register() {
               <select className="select-field" value={subscriptionId} onChange={(e) => setSubscriptionId(e.target.value)}>
                 {subscriptions.map((sub) => (
                   <option key={sub.id} value={sub.id}>
-                    {sub.name} - {sub.price ? `₹${sub.price}` : "Free"}
+                    {sub.name}{sub.price ? ` - ₹${sub.price}` : ""}
                   </option>
                 ))}
               </select>
@@ -336,6 +345,52 @@ function Register() {
           )}
         </div>
       </div>
+
+      {showSuccessModal && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="modal-content" style={{
+            backgroundColor: '#0f172a',
+            padding: '24px',
+            borderRadius: '16px',
+            maxWidth: '420px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 16px 40px rgba(0,0,0,0.35)',
+            border: '1px solid rgba(255,255,255,0.08)'
+          }}>
+            <h3 style={{ marginBottom: '12px', color: '#f8fafc' }}>Success!</h3>
+            <p style={{ marginBottom: '24px', color: '#cbd5e1', lineHeight: 1.6 }}>
+              Registration complete and vehicle uploaded. Waiting for admin verification.
+            </p>
+            <button
+              className="primary-btn"
+              onClick={handleSuccessOk}
+              style={{
+                padding: '12px 26px',
+                backgroundColor: '#14b8a6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '9999px',
+                cursor: 'pointer',
+                minWidth: '120px'
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

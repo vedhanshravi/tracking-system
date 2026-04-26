@@ -5,6 +5,23 @@ const { sendSmsMessage } = require("../utils/msg91");
 let passwordResetOtpTableCreated = false;
 let subscriptionTableReady = false;
 let userSubscriptionColumnReady = false;
+let usersTableReady = false;
+
+async function ensureUsersTable() {
+  if (usersTableReady) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      email VARCHAR(100) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      phone VARCHAR(20),
+      role VARCHAR(20) DEFAULT 'user',
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  usersTableReady = true;
+}
 
 async function ensurePasswordResetOtpTable() {
   if (passwordResetOtpTableCreated) return;
@@ -43,8 +60,25 @@ async function ensureSubscriptionTable() {
 }
 
 async function ensureUserSubscriptionColumn() {
-  // Subscription-related columns should be created and seeded manually via PGAdmin4.
-  // This function exists only to avoid runtime schema changes during request flow.
+  if (userSubscriptionColumnReady) return;
+  try {
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(50)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS middle_name VARCHAR(50)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(50)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS alternate_phone VARCHAR(20)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(100)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS state VARCHAR(100)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS country VARCHAR(100)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS postal_code VARCHAR(20)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS address_line1 VARCHAR(255)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS address_line2 VARCHAR(255)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_id INTEGER REFERENCES subscriptions(id)");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_start TIMESTAMP");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_end TIMESTAMP");
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_tier INTEGER DEFAULT 1");
+  } catch (err) {
+    console.error("Failed to ensure user columns:", err);
+  }
   userSubscriptionColumnReady = true;
 }
 
@@ -95,6 +129,7 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: "Missing required registration fields" });
     }
 
+    await ensureUsersTable();
     await ensureSubscriptionTable();
     await ensureUserSubscriptionColumn();
 
