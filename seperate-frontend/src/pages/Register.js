@@ -15,7 +15,9 @@ function Register() {
   const [addressLine2, setAddressLine2] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [subscriptionId, setSubscriptionId] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
@@ -35,6 +37,10 @@ function Register() {
 
   const validateStep = (currentStep) => {
     if (currentStep === 1) {
+      if (password !== confirmPassword) {
+        alert("Passwords do not match. Please try again.");
+        return false;
+      }
       return (
         firstName &&
         lastName &&
@@ -45,7 +51,8 @@ function Register() {
         postalCode &&
         addressLine1 &&
         email &&
-        password
+        password &&
+        confirmPassword
       );
     }
     if (currentStep === 2) {
@@ -58,6 +65,10 @@ function Register() {
   };
 
   const handleNext = () => {
+    if (step === 1 && password !== confirmPassword) {
+      alert("Passwords do not match. Please try again.");
+      return;
+    }
     if (!validateStep(step)) {
       alert("Please complete all required fields for this step.");
       return;
@@ -66,7 +77,11 @@ function Register() {
   };
 
   const handleBack = () => {
-    setStep((prev) => Math.max(prev - 1, 1));
+    if (step === 1) {
+      navigate("/");
+    } else {
+      setStep((prev) => Math.max(prev - 1, 1));
+    }
   };
 
   useEffect(() => {
@@ -202,20 +217,21 @@ function Register() {
         </div>
 
         {step === 1 && (
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">First Name *</label>
-              <input className="input-field" placeholder="Enter first name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Middle Name</label>
-              <input className="input-field" placeholder="Enter middle name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Last Name *</label>
-              <input className="input-field" placeholder="Enter last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            </div>
+          <>
             <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">First Name *</label>
+                <input className="input-field" placeholder="Enter first name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Middle Name</label>
+                <input className="input-field" placeholder="Enter middle name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Last Name *</label>
+                <input className="input-field" placeholder="Enter last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </div>
+              <div className="form-grid">
               <div className="form-group">
                 <label className="form-label">Phone *</label>
                 <input className="input-field" placeholder="Primary phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -253,13 +269,17 @@ function Register() {
               <label className="form-label">Address Line 2</label>
               <input className="input-field" placeholder="Address line 2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
             </div>
+            </div>
+
+          <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+            <h3 className="form-label" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Account Credentials</h3>
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">Email *</label>
+                <label className="form-label">Email ID *</label>
                 <input className="input-field" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">Password *</label>
+                <label className="form-label">New Password *</label>
                 <div className="password-input-container">
                   <input className="input-field" type={showPassword ? "text" : "password"} placeholder="Create a password" value={password} onChange={(e) => setPassword(e.target.value)} />
                   <button
@@ -281,8 +301,42 @@ function Register() {
                   </button>
                 </div>
               </div>
+              <div className="form-group">
+                <label className="form-label">Confirm New Password *</label>
+                <div className="password-input-container">
+                  <input 
+                    className="input-field" 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    placeholder="Confirm your password" 
+                    value={confirmPassword} 
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    style={confirmPassword && password && password !== confirmPassword ? { borderColor: '#ef4444' } : {}}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? (
+                      <svg viewBox="0 0 24 24" className="eye-icon">
+                        <path d="M2.99902 3.00002L21 21M9.8433 9.91364C9.32066 10.4536 8.99902 11.1892 8.99902 12C8.99902 13.6569 10.3422 15 12 15C12.8215 15 13.5667 14.669 14.1086 14.133M6.49902 6.64715C4.59972 7.90034 3.15305 9.78394 2.45703 12C3.73128 16.0571 7.52159 19 12 19C13.9881 19 15.8414 18.4194 17.3988 17.4184M10.999 5.04939C11.328 5.01673 11.6617 5 11.999 5C16.4784 5 20.2687 7.94291 21.5429 12C21.2607 12.894 20.8577 13.7338 20.3522 14.5"/>
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" className="eye-icon">
+                        <path d="M2.45703 12C3.73128 7.94291 7.52159 5 12 5C16.4784 5 20.2687 7.94291 21.5429 12C20.2687 16.0571 16.4784 19 12 19C7.52159 19 3.73128 16.0571 2.45703 12Z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                {confirmPassword && password && password !== confirmPassword && (
+                  <p style={{ color: '#ef4444', fontSize: '14px', marginTop: '8px' }}>Passwords do not match</p>
+                )}
+              </div>
             </div>
           </div>
+          </>
         )}
 
         {step === 2 && (
@@ -337,9 +391,9 @@ function Register() {
         )}
 
         <div className="button-row" style={{ justifyContent: "space-between" }}>
-          <button className="secondary-btn" type="button" onClick={handleBack} disabled={step === 1}>Back</button>
+          <button className="secondary-btn" type="button" onClick={handleBack}>Back</button>
           {step < 3 ? (
-            <button className="primary-btn" type="button" onClick={handleNext}>Continue</button>
+            <button className="primary-btn" type="button" onClick={handleNext} disabled={step === 1 && password && confirmPassword && password !== confirmPassword}>Continue</button>
           ) : (
             <button className="primary-btn" type="button" onClick={handleRegister}>Complete Registration</button>
           )}
