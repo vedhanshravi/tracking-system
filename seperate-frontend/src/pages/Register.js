@@ -218,57 +218,71 @@ function Register() {
 
         {step === 1 && (
           <>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">First Name *</label>
-                <input className="input-field" placeholder="Enter first name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            {/* Personal Information Section */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 className="form-label" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Personal Information</h3>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">First Name *</label>
+                  <input className="input-field" placeholder="Enter first name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Middle Name</label>
+                  <input className="input-field" placeholder="Enter middle name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Last Name *</label>
+                  <input className="input-field" placeholder="Enter last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Middle Name</label>
-                <input className="input-field" placeholder="Enter middle name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+            </div>
+
+            {/* Contact Information Section */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 className="form-label" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Contact Information</h3>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Phone *</label>
+                  <input className="input-field" placeholder="Primary phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Alternate Phone</label>
+                  <input className="input-field" placeholder="Alternate phone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Last Name *</label>
-                <input className="input-field" placeholder="Enter last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            </div>
+
+            {/* Location & Address Section */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 className="form-label" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Location & Address</h3>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Country *</label>
+                  <input className="input-field" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">State *</label>
+                  <input className="input-field" placeholder="State" value={state} onChange={(e) => setState(e.target.value)} />
+                </div>
               </div>
               <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Phone *</label>
-                <input className="input-field" placeholder="Primary phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <div className="form-group">
+                  <label className="form-label">City *</label>
+                  <input className="input-field" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Postal Code *</label>
+                  <input className="input-field" placeholder="Postal Code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                </div>
               </div>
               <div className="form-group">
-                <label className="form-label">Alternate Phone</label>
-                <input className="input-field" placeholder="Alternate phone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} />
-              </div>
-            </div>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">City *</label>
-                <input className="input-field" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+                <label className="form-label">Address Line 1 *</label>
+                <input className="input-field" placeholder="Address line 1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">State *</label>
-                <input className="input-field" placeholder="State" value={state} onChange={(e) => setState(e.target.value)} />
+                <label className="form-label">Address Line 2</label>
+                <input className="input-field" placeholder="Address line 2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
               </div>
-            </div>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Country *</label>
-                <input className="input-field" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Postal Code *</label>
-                <input className="input-field" placeholder="Postal Code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Address Line 1 *</label>
-              <input className="input-field" placeholder="Address line 1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Address Line 2</label>
-              <input className="input-field" placeholder="Address line 2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
-            </div>
             </div>
 
           <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
