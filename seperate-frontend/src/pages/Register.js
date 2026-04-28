@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import './Register.css';
 
 // Country and State-District data - Complete official Indian districts
 const countriesData = {
@@ -242,68 +243,117 @@ function Register() {
   };
 
   return (
-    <div className="page-container">
-      <div className="page-card">
-        <div className="page-hero">
+    <div className="register-container">
+      <div className="register-card">
+        <div className="register-header">
           <div>
-            <h2 className="page-title">Register Your Vehicle</h2>
-            <p className="page-subtitle">Complete the secure onboarding flow to create your tracking account and submit vehicle details in three easy steps.</p>
+            <h2 className="register-title">Register Your Vehicle</h2>
+            <p className="register-subtitle">Complete the secure onboarding flow to create your tracking account and submit vehicle details in three easy steps.</p>
           </div>
-          <div className="badge">Step {step} of 3</div>
+          <div className="register-step-badge">Step {step} of 3</div>
         </div>
 
         {step === 1 && (
           <>
             {/* Personal Information Section */}
             <div style={{ marginBottom: '32px' }}>
-              <h3 className="form-label" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Personal Information</h3>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">First Name *</label>
-                  <input className="input-field" placeholder="Enter first name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <h3
+                className="register-section-title"
+                style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}
+              >
+                Personal Information
+              </h3>
+              <div className="register-form-grid">
+                <div className="register-form-group">
+                  <label className="register-form-label">First Name *</label>
+                  <input
+                    className="register-input-field"
+                    placeholder="Enter first name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Middle Name</label>
-                  <input className="input-field" placeholder="Enter middle name" value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+                <div className="register-form-group">
+                  <label className="register-form-label">Middle Name</label>
+                  <input
+                    className="register-input-field"
+                    placeholder="Enter middle name"
+                    value={middleName}
+                    onChange={(e) => setMiddleName(e.target.value)}
+                  />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Last Name *</label>
-                  <input className="input-field" placeholder="Enter last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                <div className="register-form-group">
+                  <label className="register-form-label">Last Name *</label>
+                  <input
+                    className="register-input-field"
+                    placeholder="Enter last name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
 
             {/* Contact Information Section */}
             <div style={{ marginBottom: '32px' }}>
-              <h3 className="form-label" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Contact Information</h3>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">Phone *</label>
-                  <input className="input-field" placeholder="Primary phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <h3
+                className="register-section-title"
+                style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}
+              >
+                Contact Information
+              </h3>
+              <div className="register-form-grid">
+                <div className="register-form-group">
+                  <label className="register-form-label">Phone *</label>
+                  <input
+                    className="register-input-field"
+                    placeholder="Primary phone"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Alternate Phone</label>
-                  <input className="input-field" placeholder="Alternate phone" value={alternatePhone} onChange={(e) => setAlternatePhone(e.target.value)} />
+                <div className="register-form-group">
+                  <label className="register-form-label">Alternate Phone</label>
+                  <input
+                    className="register-input-field"
+                    placeholder="Alternate phone"
+                    value={alternatePhone}
+                    onChange={(e) => setAlternatePhone(e.target.value)}
+                  />
                 </div>
               </div>
             </div>
 
             {/* Location & Address Section */}
             <div style={{ marginBottom: '32px' }}>
-              <h3 className="form-label" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Location & Address</h3>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">Country *</label>
-                  <select className="select-field" value={country} onChange={(e) => { setCountry(e.target.value); setState(""); setCity(""); }}>
+              <h3
+                className="register-section-title"
+                style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}
+              >
+                Location & Address
+              </h3>
+              <div className="register-form-grid">
+                <div className="register-form-group">
+                  <label className="register-form-label">Country *</label>
+                  <select
+                    className="register-select-field"
+                    value={country}
+                    onChange={(e) => { setCountry(e.target.value); setState(""); setCity(""); }}
+                  >
                     <option value="">Select Country</option>
                     {Object.keys(countriesData).map((countryName) => (
                       <option key={countryName} value={countryName}>{countryName}</option>
                     ))}
                   </select>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">State *</label>
-                  <select className="select-field" value={state} onChange={(e) => { setState(e.target.value); setCity(""); }} disabled={!country}>
+                <div className="register-form-group">
+                  <label className="register-form-label">State *</label>
+                  <select
+                    className="register-select-field"
+                    value={state}
+                    onChange={(e) => { setState(e.target.value); setCity(""); }}
+                    disabled={!country}
+                  >
                     <option value="">Select State</option>
                     {country && countriesData[country] && Object.keys(countriesData[country].states).map((stateName) => (
                       <option key={stateName} value={stateName}>{stateName}</option>
@@ -311,54 +361,90 @@ function Register() {
                   </select>
                 </div>
               </div>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">City *</label>
-                  <select className="select-field" value={city} onChange={(e) => setCity(e.target.value)} disabled={!state}>
+              <div className="register-form-grid">
+                <div className="register-form-group">
+                  <label className="register-form-label">City *</label>
+                  <select
+                    className="register-select-field"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    disabled={!state}
+                  >
                     <option value="">Select City</option>
                     {state && countriesData[country] && countriesData[country].states[state] && countriesData[country].states[state].map((districtName) => (
                       <option key={districtName} value={districtName}>{districtName}</option>
                     ))}
                   </select>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Postal Code *</label>
-                  <input className="input-field" placeholder="Postal Code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+                <div className="register-form-group">
+                  <label className="register-form-label">Postal Code *</label>
+                  <input
+                    className="register-input-field"
+                    placeholder="Postal Code"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                  />
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Address Line 1 *</label>
-                <input className="input-field" placeholder="Address line 1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
+              <div className="register-form-group">
+                <label className="register-form-label">Address Line 1 *</label>
+                <input
+                  className="register-input-field"
+                  placeholder="Address line 1"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                />
               </div>
-              <div className="form-group">
-                <label className="form-label">Address Line 2</label>
-                <input className="input-field" placeholder="Address line 2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+              <div className="register-form-group">
+                <label className="register-form-label">Address Line 2</label>
+                <input
+                  className="register-input-field"
+                  placeholder="Address line 2"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                />
               </div>
             </div>
 
           <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-            <h3 className="form-label" style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>Account Credentials</h3>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Email ID *</label>
-                <input className="input-field" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <h3
+              className="register-section-title"
+              style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}
+            >
+              Account Credentials
+            </h3>
+            <div className="register-form-grid">
+              <div className="register-form-group">
+                <label className="register-form-label">Email ID *</label>
+                <input
+                  className="register-input-field"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-              <div className="form-group">
-                <label className="form-label">New Password *</label>
-                <div className="password-input-container">
-                  <input className="input-field" type={showPassword ? "text" : "password"} placeholder="Create a password" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="register-form-group">
+                <label className="register-form-label">New Password *</label>
+                <div className="register-password-container">
+                  <input
+                    className="register-input-field"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                   <button
                     type="button"
-                    className="password-toggle-btn"
+                    className="register-password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
-                      <svg viewBox="0 0 24 24" className="eye-icon">
+                      <svg viewBox="0 0 24 24" className="register-eye-icon">
                         <path d="M2.99902 3.00002L21 21M9.8433 9.91364C9.32066 10.4536 8.99902 11.1892 8.99902 12C8.99902 13.6569 10.3422 15 12 15C12.8215 15 13.5667 14.669 14.1086 14.133M6.49902 6.64715C4.59972 7.90034 3.15305 9.78394 2.45703 12C3.73128 16.0571 7.52159 19 12 19C13.9881 19 15.8414 18.4194 17.3988 17.4184M10.999 5.04939C11.328 5.01673 11.6617 5 11.999 5C16.4784 5 20.2687 7.94291 21.5429 12C21.2607 12.894 20.8577 13.7338 20.3522 14.5"/>
                       </svg>
                     ) : (
-                      <svg viewBox="0 0 24 24" className="eye-icon">
+                      <svg viewBox="0 0 24 24" className="register-eye-icon">
                         <path d="M2.45703 12C3.73128 7.94291 7.52159 5 12 5C16.4784 5 20.2687 7.94291 21.5429 12C20.2687 16.0571 16.4784 19 12 19C7.52159 19 3.73128 16.0571 2.45703 12Z"/>
                         <circle cx="12" cy="12" r="3"/>
                       </svg>
@@ -366,29 +452,29 @@ function Register() {
                   </button>
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Confirm New Password *</label>
-                <div className="password-input-container">
-                  <input 
-                    className="input-field" 
-                    type={showConfirmPassword ? "text" : "password"} 
-                    placeholder="Confirm your password" 
-                    value={confirmPassword} 
+              <div className="register-form-group">
+                <label className="register-form-label">Confirm New Password *</label>
+                <div className="register-password-container">
+                  <input
+                    className="register-input-field"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     style={confirmPassword && password && password !== confirmPassword ? { borderColor: '#ef4444' } : {}}
                   />
                   <button
                     type="button"
-                    className="password-toggle-btn"
+                    className="register-password-toggle"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                   >
                     {showConfirmPassword ? (
-                      <svg viewBox="0 0 24 24" className="eye-icon">
+                      <svg viewBox="0 0 24 24" className="register-eye-icon">
                         <path d="M2.99902 3.00002L21 21M9.8433 9.91364C9.32066 10.4536 8.99902 11.1892 8.99902 12C8.99902 13.6569 10.3422 15 12 15C12.8215 15 13.5667 14.669 14.1086 14.133M6.49902 6.64715C4.59972 7.90034 3.15305 9.78394 2.45703 12C3.73128 16.0571 7.52159 19 12 19C13.9881 19 15.8414 18.4194 17.3988 17.4184M10.999 5.04939C11.328 5.01673 11.6617 5 11.999 5C16.4784 5 20.2687 7.94291 21.5429 12C21.2607 12.894 20.8577 13.7338 20.3522 14.5"/>
                       </svg>
                     ) : (
-                      <svg viewBox="0 0 24 24" className="eye-icon">
+                      <svg viewBox="0 0 24 24" className="register-eye-icon">
                         <path d="M2.45703 12C3.73128 7.94291 7.52159 5 12 5C16.4784 5 20.2687 7.94291 21.5429 12C20.2687 16.0571 16.4784 19 12 19C7.52159 19 3.73128 16.0571 2.45703 12Z"/>
                         <circle cx="12" cy="12" r="3"/>
                       </svg>
@@ -405,42 +491,76 @@ function Register() {
         )}
 
         {step === 2 && (
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Vehicle Display Name *</label>
-              <input className="input-field" placeholder="Car Name and Car Number" value={vehicleDisplayName} onChange={(e) => setVehicleDisplayName(e.target.value)} />
+          <div className="register-form-grid">
+            <div className="register-form-group">
+              <label className="register-form-label">Vehicle Display Name *</label>
+              <input
+                className="register-input-field"
+                placeholder="Car Name and Car Number"
+                value={vehicleDisplayName}
+                onChange={(e) => setVehicleDisplayName(e.target.value)}
+              />
             </div>
-            <div className="form-group">
-              <label className="form-label">Vehicle Number</label>
-              <input className="input-field" placeholder="Enter vehicle number" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} />
+            <div className="register-form-group">
+              <label className="register-form-label">Vehicle Number</label>
+              <input
+                className="register-input-field"
+                placeholder="Enter vehicle number"
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value)}
+              />
             </div>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Owner Phone *</label>
-                <input className="input-field" placeholder="Owner phone" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} />
+            <div className="register-form-grid">
+              <div className="register-form-group">
+                <label className="register-form-label">Owner Phone *</label>
+                <input
+                  className="register-input-field"
+                  placeholder="Owner phone"
+                  value={ownerPhone}
+                  onChange={(e) => setOwnerPhone(e.target.value)}
+                />
               </div>
-              <div className="form-group">
-                <label className="form-label">Emergency Contact *</label>
-                <input className="input-field" placeholder="Emergency contact" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value)} />
+              <div className="register-form-group">
+                <label className="register-form-label">Emergency Contact *</label>
+                <input
+                  className="register-input-field"
+                  placeholder="Emergency contact"
+                  value={emergencyContact}
+                  onChange={(e) => setEmergencyContact(e.target.value)}
+                />
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">RC Document</label>
-              <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setRcFile(e.target.files[0])} />
+            <div className="register-form-group">
+              <label className="register-form-label">RC Document</label>
+              <input
+                className="register-input-field"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setRcFile(e.target.files[0])}
+              />
             </div>
-            <div className="form-group">
-              <label className="form-label">Aadhar Document</label>
-              <input className="input-field" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => setAdharFile(e.target.files[0])} />
+            <div className="register-form-group">
+              <label className="register-form-label">Aadhar Document</label>
+              <input
+                className="register-input-field"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setAdharFile(e.target.files[0])}
+              />
             </div>
-            <p className="help-text">Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB.</p>
+            <p className="register-help-text">Supported formats: PDF, JPG, JPEG, PNG. Maximum file size: 5MB.</p>
           </div>
         )}
 
         {step === 3 && (
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Choose Subscription Plan *</label>
-              <select className="select-field" value={subscriptionId} onChange={(e) => setSubscriptionId(e.target.value)}>
+          <div className="register-form-grid">
+            <div className="register-form-group">
+              <label className="register-form-label">Choose Subscription Plan *</label>
+              <select
+                className="register-select-field"
+                value={subscriptionId}
+                onChange={(e) => setSubscriptionId(e.target.value)}
+              >
                 {subscriptions.map((sub) => (
                   <option key={sub.id} value={sub.id}>
                     {sub.name}{sub.price ? ` - ₹${sub.price}` : ""}
@@ -448,25 +568,44 @@ function Register() {
                 ))}
               </select>
             </div>
-            <div className="help-card">
+            <div className="register-help-card">
               <p><strong>Plan details</strong></p>
               <p>Pick the plan that fits your usage. Your subscription will determine verification and vehicle support access.</p>
             </div>
           </div>
         )}
 
-        <div className="button-row" style={{ justifyContent: "space-between" }}>
-          <button className="secondary-btn" type="button" onClick={handleBack}>Back</button>
+        <div className="register-button-row" style={{ justifyContent: "space-between" }}>
+          <button
+            className="register-secondary-btn"
+            type="button"
+            onClick={handleBack}
+          >
+            Back
+          </button>
           {step < 3 ? (
-            <button className="primary-btn" type="button" onClick={handleNext} disabled={step === 1 && password && confirmPassword && password !== confirmPassword}>Continue</button>
+            <button
+              className="register-primary-btn"
+              type="button"
+              onClick={handleNext}
+              disabled={step === 1 && password && confirmPassword && password !== confirmPassword}
+            >
+              Continue
+            </button>
           ) : (
-            <button className="primary-btn" type="button" onClick={handleRegister}>Complete Registration</button>
+            <button
+              className="register-primary-btn"
+              type="button"
+              onClick={handleRegister}
+            >
+              Complete Registration
+            </button>
           )}
         </div>
       </div>
 
       {showSuccessModal && (
-        <div className="modal-overlay" style={{
+        <div className="register-modal-overlay" style={{
           position: 'fixed',
           top: 0,
           left: 0,
@@ -478,7 +617,7 @@ function Register() {
           justifyContent: 'center',
           zIndex: 1000
         }}>
-          <div className="modal-content" style={{
+          <div className="register-modal-content" style={{
             backgroundColor: '#0f172a',
             padding: '24px',
             borderRadius: '16px',
@@ -493,7 +632,7 @@ function Register() {
               Registration complete and vehicle uploaded. Waiting for admin verification.
             </p>
             <button
-              className="primary-btn"
+              className="register-primary-btn"
               onClick={handleSuccessOk}
               style={{
                 padding: '12px 26px',
