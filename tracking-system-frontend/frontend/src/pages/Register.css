@@ -368,6 +368,24 @@
   display: block; margin-bottom: 4px;
 }
 
+.register-plan-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  grid-column: 1 / -1;
+}
+.register-plan-item {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(94, 255, 209, 0.08);
+  border: 1px solid rgba(94, 255, 209, 0.15);
+  color: #d7ecdd;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 .register-error-banner {
   grid-column: 1 / -1;
   padding: 16px 18px;

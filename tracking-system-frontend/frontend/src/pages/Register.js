@@ -976,6 +976,11 @@ function Register() {
               <p><strong>Plan details</strong></p>
               <p>Pick the plan that fits your usage. Your subscription will determine verification and vehicle support access.</p>
             </div>
+            <div className="register-plan-summary">
+              <div className="register-plan-item">Gold - ₹199</div>
+              <div className="register-plan-item">Platinum - ₹299</div>
+              <div className="register-plan-item">Diamond - ₹499</div>
+            </div>
             {paymentError && (
               <div className="register-error-banner">
                 <p>{paymentError}</p>
