@@ -188,7 +188,7 @@ exports.createPaymentOrder = async (req, res) => {
     }
 
     const subscription = subscriptionResult.rows[0];
-    const amount = subscription.price * 100;
+    const amount = Math.round(parseFloat(subscription.price) * 100);
     const order = await createRazorpayOrder(amount, "INR", `trackpro_subscription_${subscription.id}_${Date.now()}`);
     const { keyId } = getRazorpayCredentials();
 
@@ -322,7 +322,7 @@ exports.createUser = async (req, res) => {
 
     const createdUser = result.rows[0];
     if (razorpay_order_id && razorpay_payment_id && razorpay_signature) {
-      const selectedPrice = subscriptionResult.rows[0].price || 0;
+      const selectedPrice = Math.round(parseFloat(subscriptionResult.rows[0].price || 0) * 100);
       await pool.query(
         `INSERT INTO payments (
             user_id,
@@ -340,7 +340,7 @@ exports.createUser = async (req, res) => {
           razorpay_order_id,
           razorpay_payment_id,
           razorpay_signature,
-          selectedPrice * 100,
+          selectedPrice,
           "INR",
           "paid",
         ]
