@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   createUser,
   loginUser,
+  createPaymentOrder,
   requestPasswordResetOtp,
   resetPassword,
   getCurrentUser,
@@ -14,6 +15,7 @@ const jwt = require("jsonwebtoken");
 
 router.post("/register", createUser);
 router.post("/login", loginUser);
+router.post("/create-payment-order", createPaymentOrder);
 router.post("/request-reset-otp", requestPasswordResetOtp);
 router.post("/reset-password", resetPassword);
 router.get("/subscriptions", getSubscriptions);

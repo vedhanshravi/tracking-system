@@ -69,6 +69,8 @@ function Register() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorTitle, setErrorTitle] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -208,6 +210,189 @@ function Register() {
     }
     
     return false;
+  };
+
+  const loadRazorpayScript = () => {
+    return new Promise((resolve, reject) => {
+      if (window.Razorpay) {
+        return resolve(true);
+      }
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => reject(new Error("Unable to load Razorpay checkout script."));
+      document.body.appendChild(script);
+    });
+  };
+
+  const registerUser = async (paymentData) => {
+    try {
+      const registerResp = await fetch(`${process.env.REACT_APP_API_URL}/users/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName,
+          middleName,
+          lastName,
+          phone,
+          alternatePhone,
+          city,
+          state,
+          country,
+          postalCode,
+          addressLine1,
+          addressLine2,
+          email,
+          password,
+          subscriptionId,
+          ...paymentData,
+        }),
+      });
+
+      const registerData = await registerResp.json();
+
+      if (registerResp.status !== 201) {
+        const errorMessage = registerData.message || "Registration failed";
+        if (errorMessage.toLowerCase().includes("email is already registered")) {
+          showError("Email Already Registered", "This email is already registered. Please login or use a different email.");
+        } else if (errorMessage.toLowerCase().includes("phone number is already registered")) {
+          showError("Phone Already Registered", "This phone number is already registered. Please login or use a different phone number.");
+        } else if (errorMessage.toLowerCase().includes("invalid subscription") || errorMessage.toLowerCase().includes("select a subscription")) {
+          showError("Subscription Required", "Please select a valid subscription plan before continuing.");
+        } else if (errorMessage.toLowerCase().includes("payment")) {
+          showError("Payment Failed", errorMessage);
+        } else {
+          showError("Registration Failed", errorMessage);
+        }
+        return null;
+      }
+
+      const loginResp = await fetch(`${process.env.REACT_APP_API_URL}/users/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const loginData = await loginResp.json();
+      if (!loginResp.ok || !loginData.token) {
+        showError("Login Failed", "User registered, but login failed. Please login manually.");
+        navigate("/");
+        return null;
+      }
+
+      const token = loginData.token;
+      localStorage.setItem("token", token);
+
+      const formData = new FormData();
+      const fullName = `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`.trim();
+      formData.append("vehicleNumber", vehicleNumber);
+      formData.append("vehicleDisplayName", vehicleDisplayName);
+      formData.append("ownerName", fullName);
+      formData.append("ownerPhone", ownerPhone);
+      formData.append("emergencyContact", emergencyContact);
+      if (rcFile) formData.append("rc", rcFile);
+      if (adharFile) formData.append("adhar", adharFile);
+
+      const vehicleResp = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/add`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const vehicleData = await vehicleResp.json();
+      if (!vehicleResp.ok) {
+        showError("Vehicle Upload Failed", "User registered, but vehicle upload failed: " + (vehicleData.message || "unknown"));
+        navigate("/");
+        return null;
+      }
+
+      setShowSuccessModal(true);
+      return registerData;
+    } catch (err) {
+      console.error(err);
+      showError("Server Error", "An error occurred while processing your registration. Please try again.");
+      return null;
+    }
+  };
+
+  const handlePay = async () => {
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+      return;
+    }
+    setPaymentError("");
+    setPaymentProcessing(true);
+
+    try {
+      const orderResp = await fetch(`${process.env.REACT_APP_API_URL}/users/create-payment-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ subscriptionId }),
+      });
+      const orderData = await orderResp.json();
+      if (!orderResp.ok) {
+        throw new Error(orderData.message || "Unable to create payment order.");
+      }
+
+      await loadRazorpayScript();
+
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "TrackPro",
+        description: `Subscription payment for ${orderData.subscriptionName}`,
+        order_id: orderData.orderId,
+        handler: async (response) => {
+          if (!response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
+            setPaymentProcessing(false);
+            showError("Payment Error", "Payment response is incomplete. Please try again.");
+            return;
+          }
+
+          const paymentData = {
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_signature: response.razorpay_signature,
+          };
+
+          const userResult = await registerUser(paymentData);
+          setPaymentProcessing(false);
+          if (userResult) {
+            setStep(3);
+          }
+        },
+        prefill: {
+          name: `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`.trim(),
+          email,
+          contact: phone,
+        },
+        theme: {
+          color: "#10b981",
+        },
+        modal: {
+          ondismiss: () => {
+            setPaymentProcessing(false);
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (err) {
+      console.error(err);
+      setPaymentProcessing(false);
+      const message = err.message || "Payment initialization failed.";
+      setPaymentError(message);
+      showError("Payment Error", message);
+    }
   };
 
   const handleNext = () => {
@@ -779,6 +964,7 @@ function Register() {
                 value={subscriptionId}
                 onChange={(e) => setSubscriptionId(e.target.value)}
               >
+                <option value="">Select plan</option>
                 {subscriptions.map((sub) => (
                   <option key={sub.id} value={sub.id}>
                     {sub.name}{sub.price ? ` - ₹${sub.price}` : ""}
@@ -790,6 +976,11 @@ function Register() {
               <p><strong>Plan details</strong></p>
               <p>Pick the plan that fits your usage. Your subscription will determine verification and vehicle support access.</p>
             </div>
+            {paymentError && (
+              <div className="register-error-banner">
+                <p>{paymentError}</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -822,10 +1013,11 @@ function Register() {
             <button
               className="register-primary-btn"
               type="button"
-              onClick={handleRegister}
-              data-testid="register-submit-btn"
+              onClick={handlePay}
+              disabled={paymentProcessing}
+              data-testid="register-pay-btn"
             >
-              Complete Registration
+              {paymentProcessing ? "Processing Payment..." : "Pay"}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>

@@ -1,10 +1,13 @@
 const pool = require("../config/db");
 const bcrypt = require("bcrypt");
+const https = require("https");
+const crypto = require("crypto");
 const { sendSmsMessage } = require("../utils/msg91");
 
 let passwordResetOtpTableCreated = false;
 let subscriptionTableReady = false;
 let userSubscriptionColumnReady = false;
+let paymentsTableReady = false;
 let usersTableReady = false;
 
 async function ensureUsersTable() {
@@ -45,18 +48,41 @@ async function ensureSubscriptionTable() {
       name VARCHAR(50) NOT NULL UNIQUE,
       tier INTEGER NOT NULL DEFAULT 1,
       max_vehicles INTEGER NOT NULL DEFAULT 2,
+      price INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);
   await pool.query(`
-    INSERT INTO subscriptions (name, tier, max_vehicles)
+    ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS price INTEGER NOT NULL DEFAULT 0
+  `);
+  await pool.query(`
+    INSERT INTO subscriptions (name, tier, max_vehicles, price)
     VALUES
-      ('Gold', 1, 2),
-      ('Platinum', 2, 5),
-      ('Diamond', 3, 10)
+      ('Gold', 1, 2, 199),
+      ('Platinum', 2, 5, 299),
+      ('Diamond', 3, 10, 999)
     ON CONFLICT (name) DO NOTHING
   `);
   subscriptionTableReady = true;
+}
+
+async function ensurePaymentsTable() {
+  if (paymentsTableReady) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      subscription_id INTEGER REFERENCES subscriptions(id),
+      razorpay_order_id VARCHAR(100),
+      razorpay_payment_id VARCHAR(100),
+      razorpay_signature VARCHAR(255),
+      amount INTEGER NOT NULL,
+      currency VARCHAR(10) NOT NULL DEFAULT 'INR',
+      status VARCHAR(50) NOT NULL,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  paymentsTableReady = true;
 }
 
 async function ensureUserSubscriptionColumn() {
@@ -95,6 +121,91 @@ async function clearPreviousOtps(userId) {
   await pool.query("DELETE FROM password_reset_otps WHERE user_id = $1", [userId]);
 }
 
+function getRazorpayCredentials() {
+  return {
+    keyId: process.env.RAZORPAY_KEY_ID || "rzp_test_Skqdqjg7q5tdZL",
+    keySecret: process.env.RAZORPAY_KEY_SECRET || "SwhZ9JlO1HseAeUxa6icxnPG",
+  };
+}
+
+function createRazorpayOrder(amount, currency = "INR", receipt = "trackpro_receipt") {
+  const { keyId, keySecret } = getRazorpayCredentials();
+  const postData = JSON.stringify({ amount, currency, receipt, payment_capture: 1 });
+
+  const options = {
+    hostname: "api.razorpay.com",
+    port: 443,
+    path: "/v1/orders",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(postData),
+      Authorization: `Basic ${Buffer.from(`${keyId}:${keySecret}`).toString("base64")}`,
+    },
+  };
+
+  return new Promise((resolve, reject) => {
+    const request = https.request(options, (response) => {
+      let responseData = "";
+      response.on("data", (chunk) => {
+        responseData += chunk;
+      });
+      response.on("end", () => {
+        try {
+          const parsed = JSON.parse(responseData);
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            resolve(parsed);
+          } else {
+            reject(new Error(parsed.error?.description || responseData));
+          }
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+
+    request.on("error", (err) => reject(err));
+    request.write(postData);
+    request.end();
+  });
+}
+
+exports.createPaymentOrder = async (req, res) => {
+  try {
+    const { subscriptionId } = req.body;
+    if (!subscriptionId) {
+      return res.status(400).json({ message: "Subscription ID is required" });
+    }
+
+    await ensureSubscriptionTable();
+
+    const subscriptionResult = await pool.query(
+      "SELECT id, name, price FROM subscriptions WHERE id = $1",
+      [subscriptionId]
+    );
+    if (subscriptionResult.rows.length === 0) {
+      return res.status(400).json({ message: "Invalid subscription plan" });
+    }
+
+    const subscription = subscriptionResult.rows[0];
+    const amount = subscription.price * 100;
+    const order = await createRazorpayOrder(amount, "INR", `trackpro_subscription_${subscription.id}_${Date.now()}`);
+    const { keyId } = getRazorpayCredentials();
+
+    res.json({
+      key: keyId,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      subscriptionName: subscription.name,
+      subscriptionPrice: subscription.price,
+    });
+  } catch (err) {
+    console.error("Payment order creation failed:", err);
+    res.status(500).json({ message: "Could not create payment order", error: err.message });
+  }
+};
+
 exports.createUser = async (req, res) => {
   try {
     const {
@@ -112,6 +223,9 @@ exports.createUser = async (req, res) => {
       email,
       password,
       subscriptionId,
+      razorpay_payment_id,
+      razorpay_order_id,
+      razorpay_signature,
     } = req.body;
 
     if (
@@ -124,7 +238,8 @@ exports.createUser = async (req, res) => {
       !postalCode ||
       !addressLine1 ||
       !email ||
-      !password
+      !password ||
+      !subscriptionId
     ) {
       return res.status(400).json({ message: "Missing required registration fields" });
     }
@@ -132,17 +247,32 @@ exports.createUser = async (req, res) => {
     await ensureUsersTable();
     await ensureSubscriptionTable();
     await ensureUserSubscriptionColumn();
+    await ensurePaymentsTable();
 
-    const selectedSubscriptionId = subscriptionId ? parseInt(subscriptionId, 10) : 1;
+    const selectedSubscriptionId = parseInt(subscriptionId, 10);
     const subscriptionStart = new Date();
     const subscriptionEnd = new Date(subscriptionStart);
     subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1);
-    const subscriptionCheck = await pool.query(
-      "SELECT id FROM subscriptions WHERE id = $1",
+    const subscriptionResult = await pool.query(
+      "SELECT id, price FROM subscriptions WHERE id = $1",
       [selectedSubscriptionId]
     );
-    if (subscriptionCheck.rows.length === 0) {
+    if (subscriptionResult.rows.length === 0) {
       return res.status(400).json({ message: "Invalid subscription selection" });
+    }
+
+    if (razorpay_order_id || razorpay_payment_id || razorpay_signature) {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res.status(400).json({ message: "Incomplete payment details" });
+      }
+      const { keySecret } = getRazorpayCredentials();
+      const generatedSignature = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+      if (generatedSignature !== razorpay_signature) {
+        return res.status(400).json({ message: "Payment verification failed" });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -189,9 +319,40 @@ exports.createUser = async (req, res) => {
         subscriptionEnd,
       ]
     );
-    res.status(201).json(result.rows[0]);
+
+    const createdUser = result.rows[0];
+    if (razorpay_order_id && razorpay_payment_id && razorpay_signature) {
+      const selectedPrice = subscriptionResult.rows[0].price || 0;
+      await pool.query(
+        `INSERT INTO payments (
+            user_id,
+            subscription_id,
+            razorpay_order_id,
+            razorpay_payment_id,
+            razorpay_signature,
+            amount,
+            currency,
+            status
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [
+          createdUser.id,
+          selectedSubscriptionId,
+          razorpay_order_id,
+          razorpay_payment_id,
+          razorpay_signature,
+          selectedPrice * 100,
+          "INR",
+          "paid",
+        ]
+      );
+    }
+
+    res.status(201).json(createdUser);
   } catch (err) {
     console.error(err);
+    if (err.code === "23505" && err.constraint === "users_email_key") {
+      return res.status(400).json({ message: "Email is already registered" });
+    }
     res.status(500).send("Error creating user");
   }
 };
@@ -237,7 +398,7 @@ exports.getSubscriptions = async (req, res) => {
   try {
     await ensureSubscriptionTable();
     const result = await pool.query(
-      "SELECT id, name, tier, max_vehicles FROM subscriptions ORDER BY tier ASC"
+      "SELECT id, name, tier, max_vehicles, price FROM subscriptions ORDER BY tier ASC"
     );
     res.json(result.rows);
   } catch (err) {
