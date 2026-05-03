@@ -368,6 +368,17 @@
   display: block; margin-bottom: 4px;
 }
 
+.register-error-banner {
+  grid-column: 1 / -1;
+  padding: 16px 18px;
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  color: #ffe3e3;
+  border-radius: 14px;
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+
 .register-help-text {
   color: var(--muted);
   font-size: 0.82rem;
