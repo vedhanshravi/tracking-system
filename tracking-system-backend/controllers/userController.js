@@ -60,8 +60,18 @@ async function ensureSubscriptionTable() {
     VALUES
       ('Gold', 1, 2, 199),
       ('Platinum', 2, 5, 299),
-      ('Diamond', 3, 10, 999)
+      ('Diamond', 3, 10, 499)
     ON CONFLICT (name) DO NOTHING
+  `);
+  await pool.query(`
+    UPDATE subscriptions
+    SET price = CASE
+      WHEN name = 'Gold' THEN 199
+      WHEN name = 'Platinum' THEN 299
+      WHEN name = 'Diamond' THEN 499
+      ELSE price
+    END
+    WHERE name IN ('Gold', 'Platinum', 'Diamond')
   `);
   subscriptionTableReady = true;
 }
@@ -188,7 +198,15 @@ exports.createPaymentOrder = async (req, res) => {
     }
 
     const subscription = subscriptionResult.rows[0];
-    const amount = Math.round(parseFloat(subscription.price) * 100);
+    const rawPrice = Number(subscription.price);
+    if (Number.isNaN(rawPrice) || rawPrice <= 0) {
+      return res.status(400).json({ message: "Invalid subscription price" });
+    }
+    const amount = Math.round(rawPrice * 100);
+    if (amount < 100) {
+      return res.status(400).json({ message: "Subscription price is below Razorpay minimum amount" });
+    }
+
     const order = await createRazorpayOrder(amount, "INR", `trackpro_subscription_${subscription.id}_${Date.now()}`);
     const { keyId } = getRazorpayCredentials();
 
