@@ -20,6 +20,31 @@ function Dashboard() {
     if (Number.isNaN(date.getTime())) return "-";
     return date.toISOString().split("T")[0];
   };
+
+  const validatePhoneNumber = (phone) => {
+    if (!phone) return "Required";
+    if (phone.length !== 10) return "Must be 10 digits";
+    if (!/^\d{10}$/.test(phone)) return "Invalid phone number";
+    return "";
+  };
+
+  const handleOwnerPhoneChange = (value) => {
+    const cleaned = value.replace(/\D/g, '');
+    setOwnerPhone(cleaned);
+    setValidationErrors(prev => ({
+      ...prev,
+      ownerPhoneError: validatePhoneNumber(cleaned)
+    }));
+  };
+
+  const handleEmergencyContactChange = (value) => {
+    const cleaned = value.replace(/\D/g, '');
+    setEmergencyContact(cleaned);
+    setValidationErrors(prev => ({
+      ...prev,
+      emergencyContactError: validatePhoneNumber(cleaned)
+    }));
+  };
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
@@ -33,6 +58,12 @@ function Dashboard() {
   const [helpRequests, setHelpRequests] = useState([]);
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpTab, setHelpTab] = useState("All");
+  
+  // Validation error states
+  const [validationErrors, setValidationErrors] = useState({
+    ownerPhoneError: "",
+    emergencyContactError: "",
+  });
 
   const helpCounts = {
     All: helpRequests.length,
@@ -239,13 +270,23 @@ function Dashboard() {
 
   const handleAddVehicle = async () => {
     const token = localStorage.getItem("token");
-    if (!vehicleDisplayName || !ownerPhone || !emergencyContact || !rcFile || !adharFile) {
-      alert("Please fill all required fields and upload both RC and Aadhar documents.");
+    
+    // Validate all fields
+    const ownerPhoneErr = validatePhoneNumber(ownerPhone);
+    const emergencyContactErr = validatePhoneNumber(emergencyContact);
+    
+    setValidationErrors({
+      ownerPhoneError: ownerPhoneErr,
+      emergencyContactError: emergencyContactErr
+    });
+
+    if (!vehicleDisplayName || ownerPhoneErr || emergencyContactErr) {
+      alert("Please fill all required fields with valid values.");
       return;
     }
 
     const maxFileSize = 5 * 1024 * 1024; // 5MB
-    if (rcFile.size > maxFileSize || adharFile.size > maxFileSize) {
+    if ((rcFile && rcFile.size > maxFileSize) || (adharFile && adharFile.size > maxFileSize)) {
       alert("RC and Aadhar documents must be 5MB or smaller.");
       return;
     }
@@ -256,8 +297,8 @@ function Dashboard() {
     formData.append("ownerName", getUserFullName);
     formData.append("ownerPhone", ownerPhone);
     formData.append("emergencyContact", emergencyContact);
-    formData.append("rc", rcFile);
-    formData.append("adhar", adharFile);
+    if (rcFile) formData.append("rc", rcFile);
+    if (adharFile) formData.append("adhar", adharFile);
 
     const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/add`, {
       method: "POST",
@@ -275,6 +316,7 @@ function Dashboard() {
       setEmergencyContact("");
       setRcFile(null);
       setAdharFile(null);
+      setValidationErrors({ ownerPhoneError: "", emergencyContactError: "" });
       fetchVehicles();
       fetchStats();
     }
@@ -282,8 +324,18 @@ function Dashboard() {
 
   const handleUpdateVehicle = async () => {
     const token = localStorage.getItem("token");
-    if (!ownerName || !ownerPhone || !emergencyContact) {
-      alert("Please fill required fields: owner name, phone, and emergency contact.");
+    
+    // Validate all fields
+    const ownerPhoneErr = validatePhoneNumber(ownerPhone);
+    const emergencyContactErr = validatePhoneNumber(emergencyContact);
+    
+    setValidationErrors({
+      ownerPhoneError: ownerPhoneErr,
+      emergencyContactError: emergencyContactErr
+    });
+
+    if (!ownerName || ownerPhoneErr || emergencyContactErr) {
+      alert("Please fill required fields with valid values: owner name, phone (10 digits), and emergency contact (10 digits).");
       return;
     }
 
@@ -316,6 +368,7 @@ function Dashboard() {
       setVehicleUpdateSuccessMessage(data.message || "Vehicle updated successfully.");
       setShowVehicleUpdateSuccessModal(true);
       handleCancelEdit();
+      setValidationErrors({ ownerPhoneError: "", emergencyContactError: "" });
       fetchVehicles();
       fetchStats();
     } else {
@@ -671,15 +724,33 @@ function Dashboard() {
                   <label className="form-label">Owner Phone *</label>
                   <div className="phone-input-wrapper">
                     <span className="phone-prefix">+91</span>
-                    <input className="input-field" type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value.replace(/\D/g, ''))} />
+                    <input 
+                      className={`input-field ${validationErrors.ownerPhoneError ? 'invalid-field' : ''}`} 
+                      type="tel" 
+                      inputMode="numeric" 
+                      maxLength={10} 
+                      placeholder="10-digit number" 
+                      value={ownerPhone} 
+                      onChange={(e) => handleOwnerPhoneChange(e.target.value)} 
+                    />
                   </div>
+                  {validationErrors.ownerPhoneError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.ownerPhoneError}</span>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Emergency Contact Number *</label>
                   <div className="phone-input-wrapper">
                     <span className="phone-prefix">+91</span>
-                    <input className="input-field" type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value.replace(/\D/g, ''))} />
+                    <input 
+                      className={`input-field ${validationErrors.emergencyContactError ? 'invalid-field' : ''}`} 
+                      type="tel" 
+                      inputMode="numeric" 
+                      maxLength={10} 
+                      placeholder="10-digit number" 
+                      value={emergencyContact} 
+                      onChange={(e) => handleEmergencyContactChange(e.target.value)} 
+                    />
                   </div>
+                  {validationErrors.emergencyContactError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.emergencyContactError}</span>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">RC Document</label>
@@ -714,15 +785,33 @@ function Dashboard() {
                         <label className="form-label">Owner Phone *</label>
                         <div className="phone-input-wrapper">
                           <span className="phone-prefix">+91</span>
-                          <input className="input-field" type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value.replace(/\D/g, ''))} />
+                          <input 
+                            className={`input-field ${validationErrors.ownerPhoneError ? 'invalid-field' : ''}`} 
+                            type="tel" 
+                            inputMode="numeric" 
+                            maxLength={10} 
+                            placeholder="10-digit number" 
+                            value={ownerPhone} 
+                            onChange={(e) => handleOwnerPhoneChange(e.target.value)} 
+                          />
                         </div>
+                        {validationErrors.ownerPhoneError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.ownerPhoneError}</span>}
                       </div>
                       <div className="form-group">
                         <label className="form-label">Emergency Contact *</label>
                         <div className="phone-input-wrapper">
                           <span className="phone-prefix">+91</span>
-                          <input className="input-field" type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value.replace(/\D/g, ''))} />
+                          <input 
+                            className={`input-field ${validationErrors.emergencyContactError ? 'invalid-field' : ''}`} 
+                            type="tel" 
+                            inputMode="numeric" 
+                            maxLength={10} 
+                            placeholder="10-digit number" 
+                            value={emergencyContact} 
+                            onChange={(e) => handleEmergencyContactChange(e.target.value)} 
+                          />
                         </div>
+                        {validationErrors.emergencyContactError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.emergencyContactError}</span>}
                       </div>
                     </div>
                     <div className="form-group">
