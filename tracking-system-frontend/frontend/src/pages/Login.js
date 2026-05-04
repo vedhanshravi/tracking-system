@@ -58,17 +58,24 @@ function Login() {
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        if (response.status === 401) {
-          setError("Authentication failed. Email or password is incorrect. Please check your credentials and try again.");
-          setShowErrorModal(true);
-          return;
+        let message = "Server error. Please try again later.";
+        if (response.status === 401 || response.status === 403) {
+          message = "Authentication failed. Email or password is incorrect. Please check your credentials and try again.";
+        } else if (response.status === 400) {
+          message = data?.message || "Invalid login request. Please check your email and password and try again.";
+        } else if (data?.message) {
+          message = data.message;
         }
-        throw new Error("Server returned an error");
+
+        setError(message);
+        setShowErrorModal(true);
+        return;
       }
 
-      const data = await response.json();
-      if (data.token) {
+      if (data?.token) {
         localStorage.setItem("token", data.token);
         navigate("/dashboard");
       } else {
