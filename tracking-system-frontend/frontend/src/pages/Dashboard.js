@@ -1277,7 +1277,11 @@ function Dashboard() {
                         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
                           <p style={{ margin: 0, fontWeight: 700 }}>Latest Scans</p>
                           {latestLocations.map((location, index) => {
-                            const place = `${location.city || 'Unknown city'}, ${location.country || 'India'}`;
+                            const place = location.city && location.country
+                              ? `${location.city}, ${location.country}`
+                              : location.latitude != null && location.longitude != null
+                                ? `Near ${location.latitude.toFixed(2)}, ${location.longitude.toFixed(2)}`
+                                : 'Location not available';
                             const scannedAt = location.scanned_at
                               ? new Date(location.scanned_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
                               : 'Unknown';
@@ -1287,9 +1291,6 @@ function Dashboard() {
                                 <p style={{ margin: '0 0 6px' }}><strong>Scan #{(currentPage - 1) * pageSize + index + 1}</strong></p>
                                 <p style={{ margin: '0 4px 2px' }}><strong>Time:</strong> {scannedAt}</p>
                                 <p style={{ margin: '0 4px 2px' }}><strong>Place:</strong> {place}</p>
-                                {(location.latitude != null && location.longitude != null) && (
-                                  <p style={{ margin: '0 4px 2px' }}><strong>Coordinates:</strong> {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</p>
-                                )}
                                 {location.map_url && (
                                   <a className="link-btn" href={location.map_url} target="_blank" rel="noreferrer">Open map</a>
                                 )}
@@ -1299,7 +1300,7 @@ function Dashboard() {
                           {totalPages > 1 && (
                             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                               <button
-                                className="secondary-btn"
+                                className="primary-btn"
                                 type="button"
                                 disabled={currentPage <= 1}
                                 onClick={() => setScanPageForVehicle(item.id, Math.max(1, currentPage - 1))}
@@ -1308,7 +1309,7 @@ function Dashboard() {
                               </button>
                               <span style={{ color: '#94a3b8' }}>Page {currentPage} of {totalPages}</span>
                               <button
-                                className="secondary-btn"
+                                className="primary-btn"
                                 type="button"
                                 disabled={currentPage >= totalPages}
                                 onClick={() => setScanPageForVehicle(item.id, Math.min(totalPages, currentPage + 1))}
