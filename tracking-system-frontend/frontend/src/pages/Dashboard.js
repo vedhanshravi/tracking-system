@@ -1,12 +1,29 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import carLogo from "../trackpro-car.svg";
+import "./Register.css";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicleDisplayName, setVehicleDisplayName] = useState("");
   const [showProfile, setShowProfile] = useState(false);
+  const [showVehicleUpdateSuccessModal, setShowVehicleUpdateSuccessModal] = useState(false);
+  const [vehicleUpdateSuccessMessage, setVehicleUpdateSuccessMessage] = useState("");
+  const [showAddVehicleSuccessModal, setShowAddVehicleSuccessModal] = useState(false);
+  const [showAddVehicleErrorModal, setShowAddVehicleErrorModal] = useState(false);
+  const [addVehicleErrorMessage, setAddVehicleErrorMessage] = useState("");
+
+  const [actionModal, setActionModal] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    confirmText: "OK",
+    cancelText: "",
+    isError: false,
+    onConfirm: null,
+    onCancel: null,
+  });
 
   const getUserFullName = user
     ? `${user.first_name || ""}${user.middle_name ? ` ${user.middle_name}` : ""}${user.last_name ? ` ${user.last_name}` : ""}`.trim()
@@ -17,6 +34,63 @@ function Dashboard() {
     if (Number.isNaN(date.getTime())) return "-";
     return date.toISOString().split("T")[0];
   };
+
+  const validatePhoneNumber = (phone) => {
+    if (!phone) return "Required";
+    if (phone.length !== 10) return "Must be 10 digits";
+    if (!/^\d{10}$/.test(phone)) return "Invalid phone number";
+    return "";
+  };
+
+  const handleOwnerPhoneChange = (value) => {
+    const cleaned = value.replace(/\D/g, '');
+    setOwnerPhone(cleaned);
+    setValidationErrors(prev => ({
+      ...prev,
+      ownerPhoneError: validatePhoneNumber(cleaned)
+    }));
+  };
+
+  const handleEmergencyContactChange = (value) => {
+    const cleaned = value.replace(/\D/g, '');
+    setEmergencyContact(cleaned);
+    setValidationErrors(prev => ({
+      ...prev,
+      emergencyContactError: validatePhoneNumber(cleaned)
+    }));
+  };
+
+  const handleAddVehicleSuccessOk = () => {
+    setShowAddVehicleSuccessModal(false);
+    setActiveTab("myvehicles");
+  };
+
+  const handleAddVehicleErrorOk = () => {
+    setShowAddVehicleErrorModal(false);
+  };
+
+  const openActionModal = ({ title, message, confirmText = "OK", cancelText = "", isError = false, onConfirm = null, onCancel = null }) => {
+    setActionModal({
+      visible: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      isError,
+      onConfirm,
+      onCancel,
+    });
+  };
+
+  const closeActionModal = () => {
+    setActionModal((prev) => ({
+      ...prev,
+      visible: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
@@ -30,6 +104,12 @@ function Dashboard() {
   const [helpRequests, setHelpRequests] = useState([]);
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpTab, setHelpTab] = useState("All");
+  
+  // Validation error states
+  const [validationErrors, setValidationErrors] = useState({
+    ownerPhoneError: "",
+    emergencyContactError: "",
+  });
 
   const helpCounts = {
     All: helpRequests.length,
@@ -236,14 +316,31 @@ function Dashboard() {
 
   const handleAddVehicle = async () => {
     const token = localStorage.getItem("token");
-    if (!vehicleDisplayName || !ownerPhone || !emergencyContact || !rcFile || !adharFile) {
-      alert("Please fill all required fields and upload both RC and Aadhar documents.");
+    
+    // Validate all fields
+    const ownerPhoneErr = validatePhoneNumber(ownerPhone);
+    const emergencyContactErr = validatePhoneNumber(emergencyContact);
+    
+    setValidationErrors({
+      ownerPhoneError: ownerPhoneErr,
+      emergencyContactError: emergencyContactErr
+    });
+
+    if (!vehicleDisplayName || ownerPhoneErr || emergencyContactErr) {
+      openActionModal({
+        title: "Incomplete vehicle details",
+        message: "Please fill all required fields with valid values.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
       return;
     }
 
     const maxFileSize = 5 * 1024 * 1024; // 5MB
-    if (rcFile.size > maxFileSize || adharFile.size > maxFileSize) {
-      alert("RC and Aadhar documents must be 5MB or smaller.");
+    if ((rcFile && rcFile.size > maxFileSize) || (adharFile && adharFile.size > maxFileSize)) {
+      setAddVehicleErrorMessage("RC and Aadhar documents must be 5MB or smaller.");
+      setShowAddVehicleErrorModal(true);
       return;
     }
 
@@ -253,8 +350,8 @@ function Dashboard() {
     formData.append("ownerName", getUserFullName);
     formData.append("ownerPhone", ownerPhone);
     formData.append("emergencyContact", emergencyContact);
-    formData.append("rc", rcFile);
-    formData.append("adhar", adharFile);
+    if (rcFile) formData.append("rc", rcFile);
+    if (adharFile) formData.append("adhar", adharFile);
 
     const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/add`, {
       method: "POST",
@@ -265,22 +362,36 @@ function Dashboard() {
     });
 
     const data = await response.json();
-    alert(data.message);
     if (response.ok) {
       setVehicleDisplayName("");
       setOwnerPhone("");
       setEmergencyContact("");
       setRcFile(null);
       setAdharFile(null);
+      setValidationErrors({ ownerPhoneError: "", emergencyContactError: "" });
+      setShowAddVehicleSuccessModal(true);
       fetchVehicles();
       fetchStats();
+    } else {
+      setAddVehicleErrorMessage(data.message || "Failed to add vehicle. Please try again.");
+      setShowAddVehicleErrorModal(true);
     }
   };
 
   const handleUpdateVehicle = async () => {
     const token = localStorage.getItem("token");
-    if (!ownerName || !ownerPhone || !emergencyContact) {
-      alert("Please fill required fields: owner name, phone, and emergency contact.");
+    
+    // Validate all fields
+    const ownerPhoneErr = validatePhoneNumber(ownerPhone);
+    const emergencyContactErr = validatePhoneNumber(emergencyContact);
+    
+    setValidationErrors({
+      ownerPhoneError: ownerPhoneErr,
+      emergencyContactError: emergencyContactErr
+    });
+
+    if (!ownerName || ownerPhoneErr || emergencyContactErr) {
+      alert("Please fill required fields with valid values: owner name, phone (10 digits), and emergency contact (10 digits).");
       return;
     }
 
@@ -309,11 +420,15 @@ function Dashboard() {
     });
 
     const data = await response.json();
-    alert(data.message);
     if (response.ok) {
+      setVehicleUpdateSuccessMessage(data.message || "Vehicle updated successfully.");
+      setShowVehicleUpdateSuccessModal(true);
       handleCancelEdit();
+      setValidationErrors({ ownerPhoneError: "", emergencyContactError: "" });
       fetchVehicles();
       fetchStats();
+    } else {
+      alert(data.message || "Failed to update vehicle.");
     }
   };
 
@@ -327,11 +442,7 @@ function Dashboard() {
     return false;
   };
 
-  const handleDeleteVehicle = async (vehicleId) => {
-    if (!window.confirm("Delete this vehicle? This will hide it from your dashboard.")) {
-      return;
-    }
-
+  const performDeleteVehicle = async (vehicleId) => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -347,15 +458,50 @@ function Dashboard() {
       );
 
       const data = await response.json();
-      alert(data.message || "Vehicle deleted");
       if (response.ok) {
-        fetchVehicles();
-        fetchStats();
+        openActionModal({
+          title: "Vehicle deleted successfully",
+          message: data.message || "The vehicle has been removed from your dashboard.",
+          confirmText: "OK",
+          onConfirm: () => {
+            closeActionModal();
+            fetchVehicles();
+            fetchStats();
+          },
+        });
+      } else {
+        openActionModal({
+          title: "Delete failed",
+          message: data.message || "Failed to delete vehicle. Try again.",
+          confirmText: "OK",
+          isError: true,
+          onConfirm: closeActionModal,
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to delete vehicle. Try again.");
+      openActionModal({
+        title: "Delete failed",
+        message: "Failed to delete vehicle. Try again.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
     }
+  };
+
+  const confirmDeleteVehicle = (vehicleId) => {
+    openActionModal({
+      title: "Delete this vehicle?",
+      message: "Delete this vehicle? This will hide it from your dashboard.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      onConfirm: () => {
+        closeActionModal();
+        performDeleteVehicle(vehicleId);
+      },
+      onCancel: closeActionModal,
+    });
   };
 
   if (!user) return <p>Loading...</p>;
@@ -665,15 +811,33 @@ function Dashboard() {
                   <label className="form-label">Owner Phone *</label>
                   <div className="phone-input-wrapper">
                     <span className="phone-prefix">+91</span>
-                    <input className="input-field" type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value.replace(/\D/g, ''))} />
+                    <input 
+                      className={`input-field ${validationErrors.ownerPhoneError ? 'invalid-field' : ''}`} 
+                      type="tel" 
+                      inputMode="numeric" 
+                      maxLength={10} 
+                      placeholder="10-digit number" 
+                      value={ownerPhone} 
+                      onChange={(e) => handleOwnerPhoneChange(e.target.value)} 
+                    />
                   </div>
+                  {validationErrors.ownerPhoneError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.ownerPhoneError}</span>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Emergency Contact Number *</label>
                   <div className="phone-input-wrapper">
                     <span className="phone-prefix">+91</span>
-                    <input className="input-field" type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value.replace(/\D/g, ''))} />
+                    <input 
+                      className={`input-field ${validationErrors.emergencyContactError ? 'invalid-field' : ''}`} 
+                      type="tel" 
+                      inputMode="numeric" 
+                      maxLength={10} 
+                      placeholder="10-digit number" 
+                      value={emergencyContact} 
+                      onChange={(e) => handleEmergencyContactChange(e.target.value)} 
+                    />
                   </div>
+                  {validationErrors.emergencyContactError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.emergencyContactError}</span>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">RC Document</label>
@@ -708,15 +872,33 @@ function Dashboard() {
                         <label className="form-label">Owner Phone *</label>
                         <div className="phone-input-wrapper">
                           <span className="phone-prefix">+91</span>
-                          <input className="input-field" type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value.replace(/\D/g, ''))} />
+                          <input 
+                            className={`input-field ${validationErrors.ownerPhoneError ? 'invalid-field' : ''}`} 
+                            type="tel" 
+                            inputMode="numeric" 
+                            maxLength={10} 
+                            placeholder="10-digit number" 
+                            value={ownerPhone} 
+                            onChange={(e) => handleOwnerPhoneChange(e.target.value)} 
+                          />
                         </div>
+                        {validationErrors.ownerPhoneError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.ownerPhoneError}</span>}
                       </div>
                       <div className="form-group">
                         <label className="form-label">Emergency Contact *</label>
                         <div className="phone-input-wrapper">
                           <span className="phone-prefix">+91</span>
-                          <input className="input-field" type="tel" inputMode="numeric" maxLength={10} placeholder="10-digit number" value={emergencyContact} onChange={(e) => setEmergencyContact(e.target.value.replace(/\D/g, ''))} />
+                          <input 
+                            className={`input-field ${validationErrors.emergencyContactError ? 'invalid-field' : ''}`} 
+                            type="tel" 
+                            inputMode="numeric" 
+                            maxLength={10} 
+                            placeholder="10-digit number" 
+                            value={emergencyContact} 
+                            onChange={(e) => handleEmergencyContactChange(e.target.value)} 
+                          />
                         </div>
+                        {validationErrors.emergencyContactError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.emergencyContactError}</span>}
                       </div>
                     </div>
                     <div className="form-group">
@@ -767,6 +949,18 @@ function Dashboard() {
                     <div className="vehicle-card-header">
                       <div>
                         <p className="vehicle-card-title">{v.vehicle_display_name || v.vehicle_number || 'Untitled Vehicle'}</p>
+                        {(() => {
+                          const dndValue = v.do_not_disturb === undefined || v.do_not_disturb === null
+                            ? false
+                            : (typeof v.do_not_disturb === "string"
+                                ? v.do_not_disturb.toLowerCase() === "true"
+                                : Boolean(v.do_not_disturb));
+                          return dndValue ? (
+                            <span className="pill pill-danger" style={{ marginTop: 8, display: 'inline-flex' }}>
+                              DND ON
+                            </span>
+                          ) : null;
+                        })()}
                         <p className="vehicle-card-subtitle">Vehicle information and documents</p>
                       </div>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -832,7 +1026,7 @@ function Dashboard() {
                       </div>
                     )}
 
-                    <button className="danger-btn vehicle-card-delete" type="button" onClick={() => handleDeleteVehicle(v.id)}>
+                    <button className="danger-btn vehicle-card-delete" type="button" onClick={() => confirmDeleteVehicle(v.id)}>
                       Delete Vehicle
                     </button>
                   </div>
@@ -844,6 +1038,117 @@ function Dashboard() {
           {isSubscriptionExpired(user) && (
             <div className="alert-banner">
               Your subscription has expired. You can still login and view your details, but owner/emergency contact features are disabled until renewal.
+            </div>
+          )}
+
+          {showVehicleUpdateSuccessModal && (
+            <div className="register-modal-overlay">
+              <div className="register-modal-content">
+                <div className="register-modal-icon">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <h3 className="register-modal-title">Vehicle updated successfully</h3>
+                <p className="register-modal-message">{vehicleUpdateSuccessMessage}</p>
+                <button
+                  className="register-primary-btn"
+                  onClick={() => setShowVehicleUpdateSuccessModal(false)}
+                  style={{ minWidth: 160, justifyContent: 'center' }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showAddVehicleSuccessModal && (
+            <div className="register-modal-overlay">
+              <div className="register-modal-content">
+                <div className="register-modal-icon">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <h3 className="register-modal-title">Vehicle added successfully</h3>
+                <p className="register-modal-message">Your vehicle has been added. Waiting for admin verification — you can view it in your vehicles list.</p>
+                <button
+                  className="register-primary-btn"
+                  onClick={handleAddVehicleSuccessOk}
+                  style={{ minWidth: 160, justifyContent: 'center' }}
+                >
+                  View Vehicles
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showAddVehicleErrorModal && (
+            <div className="register-modal-overlay">
+              <div className="register-modal-content">
+                <div className="register-modal-icon" style={{ background: 'linear-gradient(135deg, #ff8a9b, #ff6b7a)', color: '#fff' }}>
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <h3 className="register-modal-title">Error adding vehicle</h3>
+                <p className="register-modal-message">{addVehicleErrorMessage}</p>
+                <button
+                  className="register-primary-btn"
+                  onClick={handleAddVehicleErrorOk}
+                  style={{ minWidth: 160, justifyContent: 'center' }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
+
+          {actionModal.visible && (
+            <div className="register-modal-overlay">
+              <div className="register-modal-content">
+                <div className="register-modal-icon" style={{ background: actionModal.isError ? 'linear-gradient(135deg, #ff8a9b, #ff6b7a)' : 'linear-gradient(135deg, var(--accent), var(--primary))', color: actionModal.isError ? '#fff' : '#022016' }}>
+                  {actionModal.isError ? (
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                  ) : (
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+                <h3 className="register-modal-title">{actionModal.title}</h3>
+                <p className="register-modal-message">{actionModal.message}</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  {actionModal.cancelText ? (
+                    <button
+                      className="secondary-btn"
+                      onClick={() => {
+                        if (actionModal.onCancel) actionModal.onCancel();
+                        closeActionModal();
+                      }}
+                      style={{ minWidth: 120, justifyContent: 'center' }}
+                    >
+                      {actionModal.cancelText}
+                    </button>
+                  ) : null}
+                  <button
+                    className="register-primary-btn"
+                    onClick={() => {
+                      if (actionModal.onConfirm) actionModal.onConfirm();
+                      else closeActionModal();
+                    }}
+                    style={{ minWidth: 160, justifyContent: 'center' }}
+                  >
+                    {actionModal.confirmText}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
