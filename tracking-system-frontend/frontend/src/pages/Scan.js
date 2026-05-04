@@ -6,32 +6,110 @@ function Scan() {
   const navigate = useNavigate();
   const [owner, setOwner] = useState(null);
   const [error, setError] = useState("");
+  const [scanLocation, setScanLocation] = useState(null);
+  const [serverScanLocation, setServerScanLocation] = useState(null);
+  const [scanAccuracy, setScanAccuracy] = useState(null);
+  const [scanLocationError, setScanLocationError] = useState("");
+  const [isFetchingScanLocation, setIsFetchingScanLocation] = useState(true);
 
   useEffect(() => {
-    const fetchVehicle = async () => {
+    let isMounted = true;
+    let watchId = null;
+    let fetchTriggered = false;
+
+    const fetchVehicle = async (coords) => {
       try {
+        const payload = { vehicleNumber };
+        if (coords?.latitude != null && coords?.longitude != null) {
+          payload.scanLatitude = coords.latitude;
+          payload.scanLongitude = coords.longitude;
+          if (coords.accuracy != null) payload.scanAccuracy = coords.accuracy;
+        }
+
         const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/scan`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ vehicleNumber }),
+          body: JSON.stringify(payload),
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => null);
+
+        if (!isMounted) return;
 
         if (!response.ok) {
-          setError(data.message || "Vehicle not found");
+          setError(data?.message || "Vehicle not found");
           return;
         }
 
         setOwner(data);
+        if (data?.scanLatitude != null && data?.scanLongitude != null) {
+          setServerScanLocation({
+            latitude: data.scanLatitude,
+            longitude: data.scanLongitude,
+          });
+        }
       } catch (err) {
+        if (!isMounted) return;
+        console.error("Scan error:", err);
         setError("Server error");
       }
     };
 
-    fetchVehicle();
+    const handlePosition = (position) => {
+      if (!isMounted) return;
+      const coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      };
+      setScanLocation(coords);
+      setScanAccuracy(coords.accuracy);
+      setScanLocationError("");
+      setIsFetchingScanLocation(false);
+      if (!fetchTriggered) {
+        fetchTriggered = true;
+        fetchVehicle(coords);
+      }
+    };
+
+    const handleLocationError = (error) => {
+      if (!isMounted) return;
+      let errorMsg = "Unable to get current location.";
+      if (error.code === 1) {
+        errorMsg = "Location permission denied. Please allow location access in browser settings.";
+      } else if (error.code === 2) {
+        errorMsg = "Location temporarily unavailable. Please try again.";
+      } else if (error.code === 3) {
+        errorMsg = "Location request timed out. Please try again.";
+      }
+      setScanLocationError(errorMsg);
+      setIsFetchingScanLocation(false);
+      if (!fetchTriggered) {
+        fetchTriggered = true;
+        fetchVehicle(null);
+      }
+    };
+
+    if (!navigator.geolocation) {
+      setScanLocationError("Location is not available in this browser.");
+      setIsFetchingScanLocation(false);
+      fetchVehicle(null);
+    } else {
+      watchId = navigator.geolocation.watchPosition(handlePosition, handleLocationError, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      });
+    }
+
+    return () => {
+      isMounted = false;
+      if (watchId != null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
   }, [vehicleNumber]);
 
   const startCall = (callType) => {
@@ -69,11 +147,38 @@ function Scan() {
                   User is in do not disturb Mode.
                 </p>
               )}
+
+              {isFetchingScanLocation && (
+                <p className="page-subtitle">Detecting scan location...</p>
+              )}
+
+              {scanLocationError && (
+                <p style={{ color: '#f59e0b', fontWeight: 700, marginTop: 12 }}>{scanLocationError}</p>
+              )}
+
+              {(scanLocation || serverScanLocation) && (
+                <div style={{ marginTop: 12 }}>
+                  <p><strong>Scanned at:</strong> {(scanLocation || serverScanLocation).latitude.toFixed(6)}, {(scanLocation || serverScanLocation).longitude.toFixed(6)}</p>
+                  {scanAccuracy != null && scanLocation && (
+                    <p style={{ margin: 2, color: '#64748b' }}>Accuracy: {scanAccuracy} meters</p>
+                  )}
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${(scanLocation || serverScanLocation).latitude},${(scanLocation || serverScanLocation).longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="outline-btn"
+                    style={{ display: "inline-flex", textDecoration: "none", marginTop: 8 }}
+                  >
+                    Open scanned location in Maps
+                  </a>
+                </div>
+              )}
+
               {owner.latitude && owner.longitude && (
                 <div style={{ marginTop: 12 }}>
-                  <p><strong>Location:</strong> {owner.latitude}, {owner.longitude}</p>
+                  <p><strong>Owner location:</strong> {owner.latitude}, {owner.longitude}</p>
                   <a href={owner.mapUrl} target="_blank" rel="noopener noreferrer" className="outline-btn" style={{ display: "inline-flex", textDecoration: "none", marginTop: 8 }}>
-                    Open route in Maps
+                    Open owner route in Maps
                   </a>
                 </div>
               )}

@@ -93,6 +93,18 @@ function Register() {
     return passwordRegex.test(password);
   };
 
+  const normalizeVehicleNumber = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+  const validateVehicleNumber = (value) => {
+    const normalized = normalizeVehicleNumber(value);
+    if (!normalized) return false;
+
+    const civilianPattern = /^[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{1,4}$/;
+    const militaryPattern = /^[A-Z]{2}\d{2}[A-Z]\d{1,4}$/;
+
+    return civilianPattern.test(normalized) || militaryPattern.test(normalized);
+  };
+
   const validatePhone = (phoneNumber) => {
     const phoneRegex = /^\d{10}$/;
     return phoneRegex.test(phoneNumber.replace(/\D/g, ''));
@@ -222,6 +234,10 @@ function Register() {
       }
       if (!validatePhone(emergencyContact)) {
         showError("Invalid Emergency Contact", "Please enter a valid 10-digit phone number.");
+        return false;
+      }
+      if (vehicleNumber && !validateVehicleNumber(vehicleNumber)) {
+        showError("Invalid Vehicle Number", "Please enter a valid Indian vehicle registration number, including military-style numbers like PX07A1234 or regular formats like KA01AB1234.");
         return false;
       }
       return true;
@@ -949,11 +965,16 @@ function Register() {
             <div className="register-form-group full-width">
               <label className="register-form-label">Vehicle Number</label>
               <input
-                className="register-input-field"
+                className={getInputClass(step2Submitted && vehicleNumber && !validateVehicleNumber(vehicleNumber))}
                 placeholder="Enter vehicle number"
                 value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value)}
+                onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
               />
+              {step2Submitted && vehicleNumber && !validateVehicleNumber(vehicleNumber) && (
+                <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>
+                  Vehicle number must match Indian format (e.g. KA01AB1234, BH01AA1234 or DL1C1234).
+                </p>
+              )}
             </div>
             <div className="register-form-group">
               <label className="register-form-label">Owner Phone *</label>
