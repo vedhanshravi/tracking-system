@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import carLogo from "../trackpro-car.svg";
+import "./Register.css";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicleDisplayName, setVehicleDisplayName] = useState("");
   const [showProfile, setShowProfile] = useState(false);
+  const [showVehicleUpdateSuccessModal, setShowVehicleUpdateSuccessModal] = useState(false);
+  const [vehicleUpdateSuccessMessage, setVehicleUpdateSuccessMessage] = useState("");
 
   const getUserFullName = user
     ? `${user.first_name || ""}${user.middle_name ? ` ${user.middle_name}` : ""}${user.last_name ? ` ${user.last_name}` : ""}`.trim()
@@ -309,11 +312,14 @@ function Dashboard() {
     });
 
     const data = await response.json();
-    alert(data.message);
     if (response.ok) {
+      setVehicleUpdateSuccessMessage(data.message || "Vehicle updated successfully.");
+      setShowVehicleUpdateSuccessModal(true);
       handleCancelEdit();
       fetchVehicles();
       fetchStats();
+    } else {
+      alert(data.message || "Failed to update vehicle.");
     }
   };
 
@@ -767,6 +773,18 @@ function Dashboard() {
                     <div className="vehicle-card-header">
                       <div>
                         <p className="vehicle-card-title">{v.vehicle_display_name || v.vehicle_number || 'Untitled Vehicle'}</p>
+                        {(() => {
+                          const dndValue = v.do_not_disturb === undefined || v.do_not_disturb === null
+                            ? false
+                            : (typeof v.do_not_disturb === "string"
+                                ? v.do_not_disturb.toLowerCase() === "true"
+                                : Boolean(v.do_not_disturb));
+                          return dndValue ? (
+                            <span className="pill pill-danger" style={{ marginTop: 8, display: 'inline-flex' }}>
+                              DND ON
+                            </span>
+                          ) : null;
+                        })()}
                         <p className="vehicle-card-subtitle">Vehicle information and documents</p>
                       </div>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -844,6 +862,27 @@ function Dashboard() {
           {isSubscriptionExpired(user) && (
             <div className="alert-banner">
               Your subscription has expired. You can still login and view your details, but owner/emergency contact features are disabled until renewal.
+            </div>
+          )}
+
+          {showVehicleUpdateSuccessModal && (
+            <div className="register-modal-overlay">
+              <div className="register-modal-content">
+                <div className="register-modal-icon">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <h3 className="register-modal-title">Vehicle updated successfully</h3>
+                <p className="register-modal-message">{vehicleUpdateSuccessMessage}</p>
+                <button
+                  className="register-primary-btn"
+                  onClick={() => setShowVehicleUpdateSuccessModal(false)}
+                  style={{ minWidth: 160, justifyContent: 'center' }}
+                >
+                  OK
+                </button>
+              </div>
             </div>
           )}
 
