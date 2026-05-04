@@ -7,6 +7,11 @@ function Dashboard() {
   const [user, setUser] = useState(null);
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [vehicleDisplayName, setVehicleDisplayName] = useState("");
+  const [validationErrors, setValidationErrors] = useState({
+    ownerPhoneError: "",
+    emergencyContactError: "",
+    vehicleNumberError: "",
+  });
   const [showProfile, setShowProfile] = useState(false);
   const [showVehicleUpdateSuccessModal, setShowVehicleUpdateSuccessModal] = useState(false);
   const [vehicleUpdateSuccessMessage, setVehicleUpdateSuccessMessage] = useState("");
@@ -40,6 +45,17 @@ function Dashboard() {
     if (phone.length !== 10) return "Must be 10 digits";
     if (!/^\d{10}$/.test(phone)) return "Invalid phone number";
     return "";
+  };
+
+  const normalizeVehicleNumber = (value) => value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const validateVehicleNumber = (value) => {
+    const normalized = normalizeVehicleNumber(value);
+    if (!normalized) return false;
+
+    const civilianPattern = /^[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{1,4}$/;
+    const militaryPattern = /^[A-Z]{2}\d{2}[A-Z]\d{1,4}$/;
+
+    return civilianPattern.test(normalized) || militaryPattern.test(normalized);
   };
 
   const handleOwnerPhoneChange = (value) => {
@@ -109,6 +125,7 @@ function Dashboard() {
   const [validationErrors, setValidationErrors] = useState({
     ownerPhoneError: "",
     emergencyContactError: "",
+    vehicleNumberError: "",
   });
 
   const helpCounts = {
@@ -320,13 +337,17 @@ function Dashboard() {
     // Validate all fields
     const ownerPhoneErr = validatePhoneNumber(ownerPhone);
     const emergencyContactErr = validatePhoneNumber(emergencyContact);
+    const vehicleNumberErr = vehicleNumber && !validateVehicleNumber(vehicleNumber)
+      ? "Invalid vehicle number"
+      : "";
     
     setValidationErrors({
       ownerPhoneError: ownerPhoneErr,
-      emergencyContactError: emergencyContactErr
+      emergencyContactError: emergencyContactErr,
+      vehicleNumberError: vehicleNumberErr,
     });
 
-    if (!vehicleDisplayName || ownerPhoneErr || emergencyContactErr) {
+    if (!vehicleDisplayName || ownerPhoneErr || emergencyContactErr || vehicleNumberErr) {
       openActionModal({
         title: "Incomplete vehicle details",
         message: "Please fill all required fields with valid values.",
@@ -345,7 +366,7 @@ function Dashboard() {
     }
 
     const formData = new FormData();
-    formData.append("vehicleNumber", "");
+    formData.append("vehicleNumber", vehicleNumber);
     formData.append("vehicleDisplayName", vehicleDisplayName);
     formData.append("ownerName", getUserFullName);
     formData.append("ownerPhone", ownerPhone);
@@ -364,11 +385,12 @@ function Dashboard() {
     const data = await response.json();
     if (response.ok) {
       setVehicleDisplayName("");
+      setVehicleNumber("");
       setOwnerPhone("");
       setEmergencyContact("");
       setRcFile(null);
       setAdharFile(null);
-      setValidationErrors({ ownerPhoneError: "", emergencyContactError: "" });
+      setValidationErrors({ ownerPhoneError: "", emergencyContactError: "", vehicleNumberError: "" });
       setShowAddVehicleSuccessModal(true);
       fetchVehicles();
       fetchStats();
@@ -384,20 +406,36 @@ function Dashboard() {
     // Validate all fields
     const ownerPhoneErr = validatePhoneNumber(ownerPhone);
     const emergencyContactErr = validatePhoneNumber(emergencyContact);
+    const vehicleNumberErr = vehicleNumber && !validateVehicleNumber(vehicleNumber)
+      ? "Invalid vehicle number"
+      : "";
     
     setValidationErrors({
       ownerPhoneError: ownerPhoneErr,
-      emergencyContactError: emergencyContactErr
+      emergencyContactError: emergencyContactErr,
+      vehicleNumberError: vehicleNumberErr,
     });
 
-    if (!ownerName || ownerPhoneErr || emergencyContactErr) {
-      alert("Please fill required fields with valid values: owner name, phone (10 digits), and emergency contact (10 digits).");
+    if (!ownerName || ownerPhoneErr || emergencyContactErr || vehicleNumberErr) {
+      openActionModal({
+        title: "Incomplete vehicle details",
+        message: "Please fill all required fields with valid values.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
       return;
     }
 
     const maxFileSize = 5 * 1024 * 1024; // 5MB
     if ((rcFile && rcFile.size > maxFileSize) || (adharFile && adharFile.size > maxFileSize)) {
-      alert("RC and Aadhar documents must be 5MB or smaller.");
+      openActionModal({
+        title: "Upload limit exceeded",
+        message: "RC and Aadhar documents must be 5MB or smaller.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
       return;
     }
 
@@ -424,11 +462,17 @@ function Dashboard() {
       setVehicleUpdateSuccessMessage(data.message || "Vehicle updated successfully.");
       setShowVehicleUpdateSuccessModal(true);
       handleCancelEdit();
-      setValidationErrors({ ownerPhoneError: "", emergencyContactError: "" });
+      setValidationErrors({ ownerPhoneError: "", emergencyContactError: "", vehicleNumberError: "" });
       fetchVehicles();
       fetchStats();
     } else {
-      alert(data.message || "Failed to update vehicle.");
+      openActionModal({
+        title: "Update failed",
+        message: data.message || "Failed to update vehicle.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
     }
   };
 
@@ -808,6 +852,16 @@ function Dashboard() {
                   <input className="input-field" placeholder="Car Name and Car Number" value={vehicleDisplayName} onChange={(e) => setVehicleDisplayName(e.target.value)} />
                 </div>
                 <div className="form-group">
+                  <label className="form-label">Vehicle Number</label>
+                  <input
+                    className={`input-field ${validationErrors.vehicleNumberError ? 'invalid-field' : ''}`}
+                    placeholder="Enter vehicle number"
+                    value={vehicleNumber}
+                    onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+                  />
+                  {validationErrors.vehicleNumberError && <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>{validationErrors.vehicleNumberError}</span>}
+                </div>
+                <div className="form-group">
                   <label className="form-label">Owner Phone *</label>
                   <div className="phone-input-wrapper">
                     <span className="phone-prefix">+91</span>
@@ -865,7 +919,17 @@ function Dashboard() {
                     </div>
                     <div className="form-group">
                       <label className="form-label">Vehicle Number</label>
-                      <input className="input-field" placeholder="Enter vehicle number" value={vehicleNumber} onChange={(e) => setVehicleNumber(e.target.value)} />
+                      <input
+                        className={`input-field ${validationErrors.vehicleNumberError ? 'invalid-field' : ''}`}
+                        placeholder="Enter vehicle number"
+                        value={vehicleNumber}
+                        onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+                      />
+                      {validationErrors.vehicleNumberError && (
+                        <span style={{ color: '#ffbfc6', fontSize: '0.82rem', marginTop: '4px' }}>
+                          {validationErrors.vehicleNumberError}
+                        </span>
+                      )}
                     </div>
                     <div className="form-grid">
                       <div className="form-group">
