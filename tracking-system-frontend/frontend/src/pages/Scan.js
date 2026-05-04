@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import carLogo from "../trackpro-car.svg";
 
 function Scan() {
   const { vehicleNumber } = useParams();
@@ -127,7 +128,8 @@ function Scan() {
   return (
     <div className="page-container">
       <div className="page-card" style={{ maxWidth: 760, margin: "0 auto" }}>
-        <div className="page-hero">
+        <div className="page-hero" style={{ alignItems: 'center', gap: 16 }}>
+          <img src={carLogo} alt="TrackPro logo" style={{ width: 48, height: 48 }} />
           <div>
             <h2 className="page-title">Vehicle Information</h2>
             <p className="page-subtitle">Check owner contact details, emergency contacts, and route information quickly from the scan results.</p>
@@ -162,24 +164,6 @@ function Scan() {
                   {scanAccuracy != null && scanLocation && (
                     <p style={{ margin: 2, color: '#64748b' }}>Accuracy: {scanAccuracy} meters</p>
                   )}
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${(scanLocation || serverScanLocation).latitude},${(scanLocation || serverScanLocation).longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="outline-btn"
-                    style={{ display: "inline-flex", textDecoration: "none", marginTop: 8 }}
-                  >
-                    Open scanned location in Maps
-                  </a>
-                </div>
-              )}
-
-              {owner.latitude && owner.longitude && (
-                <div style={{ marginTop: 12 }}>
-                  <p><strong>Owner location:</strong> {owner.latitude}, {owner.longitude}</p>
-                  <a href={owner.mapUrl} target="_blank" rel="noopener noreferrer" className="outline-btn" style={{ display: "inline-flex", textDecoration: "none", marginTop: 8 }}>
-                    Open owner route in Maps
-                  </a>
                 </div>
               )}
             </div>
