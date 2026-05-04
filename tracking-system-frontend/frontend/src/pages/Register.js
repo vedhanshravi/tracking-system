@@ -73,6 +73,10 @@ function Register() {
   const [paymentError, setPaymentError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
+  const [alternatePhoneError, setAlternatePhoneError] = useState("");
+  const [ownerPhoneError, setOwnerPhoneError] = useState("");
+  const [emergencyContactError, setEmergencyContactError] = useState("");
+  const [postalCodeError, setPostalCodeError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();
 
@@ -181,6 +185,14 @@ function Register() {
         showError("Postal Code Required", "Please enter your postal code.");
         return false;
       }
+      if (!/^\d+$/.test(postalCode)) {
+        showError("Invalid Postal Code", "Postal code must contain only numbers.");
+        return false;
+      }
+      if (postalCode.length < 5) {
+        showError("Invalid Postal Code", "Postal code must be at least 5 digits.");
+        return false;
+      }
 
       return true;
     }
@@ -194,8 +206,16 @@ function Register() {
         showError("Owner Phone Required", "Please enter the vehicle owner's phone number.");
         return false;
       }
+      if (!validatePhone(ownerPhone)) {
+        showError("Invalid Owner Phone", "Please enter a valid 10-digit phone number.");
+        return false;
+      }
       if (!emergencyContact) {
         showError("Emergency Contact Required", "Please enter an emergency contact number.");
+        return false;
+      }
+      if (!validatePhone(emergencyContact)) {
+        showError("Invalid Emergency Contact", "Please enter a valid 10-digit phone number.");
         return false;
       }
       return true;
@@ -700,9 +720,18 @@ function Register() {
                       maxLength={10}
                       placeholder="Alternate number"
                       value={alternatePhone}
-                      onChange={(e) => setAlternatePhone(e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => {
+                        const numericValue = e.target.value.replace(/\D/g, '');
+                        setAlternatePhone(numericValue);
+                        if (numericValue && !validatePhone(numericValue)) {
+                          setAlternatePhoneError("Please enter a valid 10-digit phone number.");
+                        } else {
+                          setAlternatePhoneError("");
+                        }
+                      }}
                     />
                   </div>
+                  {alternatePhoneError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>{alternatePhoneError}</p>}
                 </div>
               </div>
             </div>
@@ -758,8 +787,17 @@ function Register() {
                     className="register-input-field"
                     placeholder="Postal Code"
                     value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/\D/g, '');
+                      setPostalCode(numericValue);
+                      if (numericValue && numericValue.length < 5) {
+                        setPostalCodeError("Postal code must be at least 5 digits.");
+                      } else {
+                        setPostalCodeError("");
+                      }
+                    }}
                   />
+                  {postalCodeError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>{postalCodeError}</p>}
                 </div>
                 <div className="register-form-group full-width">
                   <label className="register-form-label">Address Line 1 *</label>
@@ -914,9 +952,18 @@ function Register() {
                   maxLength={10}
                   placeholder="10-digit number"
                   value={ownerPhone}
-                  onChange={(e) => setOwnerPhone(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => {
+                    const numericValue = e.target.value.replace(/\D/g, '');
+                    setOwnerPhone(numericValue);
+                    if (numericValue && !validatePhone(numericValue)) {
+                      setOwnerPhoneError("Please enter a valid 10-digit phone number.");
+                    } else {
+                      setOwnerPhoneError("");
+                    }
+                  }}
                 />
               </div>
+              {ownerPhoneError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>{ownerPhoneError}</p>}
             </div>
             <div className="register-form-group">
               <label className="register-form-label">Emergency Contact *</label>
@@ -929,9 +976,18 @@ function Register() {
                   maxLength={10}
                   placeholder="Emergency number"
                   value={emergencyContact}
-                  onChange={(e) => setEmergencyContact(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => {
+                    const numericValue = e.target.value.replace(/\D/g, '');
+                    setEmergencyContact(numericValue);
+                    if (numericValue && !validatePhone(numericValue)) {
+                      setEmergencyContactError("Please enter a valid 10-digit phone number.");
+                    } else {
+                      setEmergencyContactError("");
+                    }
+                  }}
                 />
               </div>
+              {emergencyContactError && <p style={{ color: '#ef4444', fontSize: '0.875rem', marginTop: '4px' }}>{emergencyContactError}</p>}
             </div>
             <div className="register-form-group">
               <label className="register-form-label">RC Document</label>
