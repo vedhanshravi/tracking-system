@@ -288,7 +288,13 @@ function Dashboard() {
     if (!token) return;
 
     if (!helpDescription.trim() || (!contactEmail.trim() && !contactPhone.trim())) {
-      alert("Please provide a description and at least an email or phone number.");
+      openActionModal({
+        title: "Incomplete help request",
+        message: "Please provide a description and at least an email or phone number.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
       return;
     }
 
@@ -307,20 +313,39 @@ function Dashboard() {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
       if (!response.ok) {
-        alert(data.message || "Failed to submit help request");
+        openActionModal({
+          title: "Help request failed",
+          message: data?.message || "Failed to submit help request. Please try again.",
+          confirmText: "OK",
+          isError: true,
+          onConfirm: closeActionModal,
+        });
         return;
       }
 
-      alert("Help request submitted successfully.");
       setHelpDescription("");
       setHelpDetailDescription("");
       fetchHelpRequests();
       setActiveTab("help");
+      openActionModal({
+        title: "Help request submitted successfully",
+        message: data?.message || "Your request has been submitted. Our team will contact you soon.",
+        confirmText: "OK",
+        onConfirm: () => {
+          closeActionModal();
+        },
+      });
     } catch (err) {
       console.error(err);
-      alert("Failed to submit help request");
+      openActionModal({
+        title: "Help request failed",
+        message: "Failed to submit help request. Please try again later.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
     }
   };
 
