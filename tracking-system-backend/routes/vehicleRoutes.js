@@ -622,17 +622,22 @@ router.get("/stats", verifyToken, async (req, res) => {
         COUNT(s.id) AS total_scans,
         MAX(s.scanned_at) AS last_scanned,
         COALESCE(
-          json_agg(
-            json_build_object(
-              'city', s.city,
-              'country', s.country,
-              'latitude', s.latitude,
-              'longitude', s.longitude,
-              'map_url', s.map_url,
-              'scanned_at', s.scanned_at
-            ) ORDER BY s.scanned_at DESC
-          ) FILTER (WHERE s.id IS NOT NULL),
-          '[]'
+          (
+            SELECT json_agg(scan_item)
+            FROM (
+              SELECT json_build_object(
+                'city', s2.city,
+                'country', s2.country,
+                'latitude', s2.latitude,
+                'longitude', s2.longitude,
+                'map_url', s2.map_url,
+                'scanned_at', s2.scanned_at
+              ) AS scan_item
+              FROM scans s2
+              WHERE s2.vehicle_id = v.id
+              ORDER BY s2.scanned_at DESC
+            ) sub
+          ), '[]'
         ) AS scan_locations
       FROM vehicles v
       LEFT JOIN scans s ON v.id = s.vehicle_id
