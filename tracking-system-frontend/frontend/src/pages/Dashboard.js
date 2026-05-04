@@ -121,13 +121,6 @@ function Dashboard() {
   const [helpLoading, setHelpLoading] = useState(false);
   const [helpTab, setHelpTab] = useState("All");
   
-  // Validation error states
-  const [validationErrors, setValidationErrors] = useState({
-    ownerPhoneError: "",
-    emergencyContactError: "",
-    vehicleNumberError: "",
-  });
-
   const helpCounts = {
     All: helpRequests.length,
     Open: helpRequests.filter((issue) => issue.status === "Open").length,
