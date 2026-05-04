@@ -10,6 +10,9 @@ function Dashboard() {
   const [showProfile, setShowProfile] = useState(false);
   const [showVehicleUpdateSuccessModal, setShowVehicleUpdateSuccessModal] = useState(false);
   const [vehicleUpdateSuccessMessage, setVehicleUpdateSuccessMessage] = useState("");
+  const [showAddVehicleSuccessModal, setShowAddVehicleSuccessModal] = useState(false);
+  const [showAddVehicleErrorModal, setShowAddVehicleErrorModal] = useState(false);
+  const [addVehicleErrorMessage, setAddVehicleErrorMessage] = useState("");
 
   const getUserFullName = user
     ? `${user.first_name || ""}${user.middle_name ? ` ${user.middle_name}` : ""}${user.last_name ? ` ${user.last_name}` : ""}`.trim()
@@ -44,6 +47,15 @@ function Dashboard() {
       ...prev,
       emergencyContactError: validatePhoneNumber(cleaned)
     }));
+  };
+
+  const handleAddVehicleSuccessOk = () => {
+    setShowAddVehicleSuccessModal(false);
+    setActiveTab("myvehicles");
+  };
+
+  const handleAddVehicleErrorOk = () => {
+    setShowAddVehicleErrorModal(false);
   };
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
@@ -287,7 +299,8 @@ function Dashboard() {
 
     const maxFileSize = 5 * 1024 * 1024; // 5MB
     if ((rcFile && rcFile.size > maxFileSize) || (adharFile && adharFile.size > maxFileSize)) {
-      alert("RC and Aadhar documents must be 5MB or smaller.");
+      setAddVehicleErrorMessage("RC and Aadhar documents must be 5MB or smaller.");
+      setShowAddVehicleErrorModal(true);
       return;
     }
 
@@ -309,7 +322,6 @@ function Dashboard() {
     });
 
     const data = await response.json();
-    alert(data.message);
     if (response.ok) {
       setVehicleDisplayName("");
       setOwnerPhone("");
@@ -317,8 +329,12 @@ function Dashboard() {
       setRcFile(null);
       setAdharFile(null);
       setValidationErrors({ ownerPhoneError: "", emergencyContactError: "" });
+      setShowAddVehicleSuccessModal(true);
       fetchVehicles();
       fetchStats();
+    } else {
+      setAddVehicleErrorMessage(data.message || "Failed to add vehicle. Please try again.");
+      setShowAddVehicleErrorModal(true);
     }
   };
 
@@ -974,6 +990,51 @@ function Dashboard() {
               </div>
             </div>
           )}
+
+          {showAddVehicleSuccessModal && (
+            <div className="register-modal-overlay">
+              <div className="register-modal-content">
+                <div className="register-modal-icon">
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <h3 className="register-modal-title">Vehicle added successfully</h3>
+                <p className="register-modal-message">Your vehicle has been added. Waiting for admin verification — you can view it in your vehicles list.</p>
+                <button
+                  className="register-primary-btn"
+                  onClick={handleAddVehicleSuccessOk}
+                  style={{ minWidth: 160, justifyContent: 'center' }}
+                >
+                  View Vehicles
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showAddVehicleErrorModal && (
+            <div className="register-modal-overlay">
+              <div className="register-modal-content">
+                <div className="register-modal-icon" style={{ background: 'linear-gradient(135deg, #ff8a9b, #ff6b7a)', color: '#fff' }}>
+                  <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                </div>
+                <h3 className="register-modal-title">Error adding vehicle</h3>
+                <p className="register-modal-message">{addVehicleErrorMessage}</p>
+                <button
+                  className="register-primary-btn"
+                  onClick={handleAddVehicleErrorOk}
+                  style={{ minWidth: 160, justifyContent: 'center' }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          )}
+
 
           {activeTab === "analytics" && (
             <div style={{ display: 'grid', gap: 16 }}>
