@@ -84,7 +84,12 @@ function Dashboard() {
     setOwnerName(v.owner_name || "");
     setOwnerPhone(v.owner_phone || "");
     setEmergencyContact(v.emergency_contact || "");
-    setDoNotDisturb(v.do_not_disturb !== undefined ? v.do_not_disturb : false);
+    const normalizedDnd = v.do_not_disturb === undefined || v.do_not_disturb === null
+      ? false
+      : (typeof v.do_not_disturb === "string"
+          ? v.do_not_disturb.toLowerCase() === "true"
+          : Boolean(v.do_not_disturb));
+    setDoNotDisturb(normalizedDnd);
     setRcFile(null);
     setAdharFile(null);
   };
@@ -803,7 +808,18 @@ function Dashboard() {
                       </div>
                       <div className="vehicle-card-row">
                         <span className="vehicle-card-key">Do Not Disturb</span>
-                        <span className="vehicle-card-value">{v.do_not_disturb !== undefined ? (v.do_not_disturb ? 'Enabled' : 'Disabled') : 'Not Set'}</span>
+                        <span className="vehicle-card-value">
+                          {(() => {
+                            const value = v.do_not_disturb === undefined || v.do_not_disturb === null
+                              ? null
+                              : (typeof v.do_not_disturb === "string"
+                                  ? v.do_not_disturb.toLowerCase() === "true"
+                                  : Boolean(v.do_not_disturb));
+
+                            if (value === null) return 'Not Set';
+                            return value ? 'Enabled' : 'Disabled';
+                          })()}
+                        </span>
                       </div>
                     </div>
 
