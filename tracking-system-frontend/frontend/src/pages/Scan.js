@@ -6,32 +6,79 @@ function Scan() {
   const navigate = useNavigate();
   const [owner, setOwner] = useState(null);
   const [error, setError] = useState("");
+  const [scanLocation, setScanLocation] = useState(null);
+  const [scanLocationError, setScanLocationError] = useState("");
+  const [isFetchingScanLocation, setIsFetchingScanLocation] = useState(true);
 
   useEffect(() => {
-    const fetchVehicle = async () => {
+    let isMounted = true;
+
+    const fetchVehicle = async (coords) => {
       try {
+        const payload = { vehicleNumber };
+        if (coords?.latitude != null && coords?.longitude != null) {
+          payload.scanLatitude = coords.latitude;
+          payload.scanLongitude = coords.longitude;
+        }
+
         const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/scan`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ vehicleNumber }),
+          body: JSON.stringify(payload),
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => null);
+
+        if (!isMounted) return;
 
         if (!response.ok) {
-          setError(data.message || "Vehicle not found");
+          setError(data?.message || "Vehicle not found");
           return;
         }
 
         setOwner(data);
       } catch (err) {
+        if (!isMounted) return;
         setError("Server error");
       }
     };
 
-    fetchVehicle();
+    const fetchWithLocation = () => {
+      if (!navigator.geolocation) {
+        setScanLocationError("Location is not available in this browser.");
+        setIsFetchingScanLocation(false);
+        fetchVehicle(null);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (!isMounted) return;
+          const coords = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          setScanLocation(coords);
+          setIsFetchingScanLocation(false);
+          fetchVehicle(coords);
+        },
+        (_) => {
+          if (!isMounted) return;
+          setScanLocationError("Unable to get current location. Please allow location access.");
+          setIsFetchingScanLocation(false);
+          fetchVehicle(null);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    };
+
+    fetchWithLocation();
+
+    return () => {
+      isMounted = false;
+    };
   }, [vehicleNumber]);
 
   const startCall = (callType) => {
@@ -69,11 +116,35 @@ function Scan() {
                   User is in do not disturb Mode.
                 </p>
               )}
+
+              {isFetchingScanLocation && (
+                <p className="page-subtitle">Detecting scan location...</p>
+              )}
+
+              {scanLocationError && (
+                <p style={{ color: '#f59e0b', fontWeight: 700, marginTop: 12 }}>{scanLocationError}</p>
+              )}
+
+              {scanLocation && (
+                <div style={{ marginTop: 12 }}>
+                  <p><strong>Scanned at:</strong> {scanLocation.latitude.toFixed(6)}, {scanLocation.longitude.toFixed(6)}</p>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${scanLocation.latitude},${scanLocation.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="outline-btn"
+                    style={{ display: "inline-flex", textDecoration: "none", marginTop: 8 }}
+                  >
+                    Open scanned location in Maps
+                  </a>
+                </div>
+              )}
+
               {owner.latitude && owner.longitude && (
                 <div style={{ marginTop: 12 }}>
-                  <p><strong>Location:</strong> {owner.latitude}, {owner.longitude}</p>
+                  <p><strong>Owner location:</strong> {owner.latitude}, {owner.longitude}</p>
                   <a href={owner.mapUrl} target="_blank" rel="noopener noreferrer" className="outline-btn" style={{ display: "inline-flex", textDecoration: "none", marginTop: 8 }}>
-                    Open route in Maps
+                    Open owner route in Maps
                   </a>
                 </div>
               )}
