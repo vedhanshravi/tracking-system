@@ -1248,13 +1248,44 @@ function Dashboard() {
           {activeTab === "analytics" && (
             <div style={{ display: 'grid', gap: 16 }}>
               <h3>Scan Analytics</h3>
-              {stats.length === 0 ? <p>No scan data yet.</p> : stats.map((item) => (
-                <div key={item.id} style={{ border: '1px solid rgba(148, 163, 184, 0.16)', padding: 18, borderRadius: 16, background: '#0f172a' }}>
-                  <p><strong>Vehicle:</strong> {item.vehicle_number}</p>
-                  <p>Total Scans: {item.total_scans}</p>
-                  <p>Last Scanned: {item.last_scanned ? new Date(item.last_scanned).toLocaleString() : 'Never'}</p>
-                </div>
-              ))}
+              {stats.length === 0 ? (
+                <p>No scan data yet.</p>
+              ) : (
+                stats.map((item) => {
+                  const scanLocations = Array.isArray(item.scan_locations)
+                    ? item.scan_locations
+                    : (item.scan_locations ? JSON.parse(item.scan_locations) : []);
+                  const displayName = item.vehicle_display_name || item.vehicle_number || 'Untitled Vehicle';
+
+                  return (
+                    <div key={item.id} style={{ border: '1px solid rgba(148, 163, 184, 0.16)', padding: 18, borderRadius: 16, background: '#0f172a' }}>
+                      <p><strong>Vehicle:</strong> {displayName}</p>
+                      <p><strong>Total Scans:</strong> {item.total_scans}</p>
+                      <p><strong>Last Scanned:</strong> {item.last_scanned ? new Date(item.last_scanned).toLocaleString() : 'Never'}</p>
+                      {scanLocations.length === 0 ? (
+                        <p style={{ marginTop: 12 }}>No scan location data available yet.</p>
+                      ) : (
+                        <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+                          <p style={{ margin: 0, fontWeight: 700 }}>Scan locations</p>
+                          {scanLocations.map((location, index) => (
+                            <div key={index} style={{ padding: 12, borderRadius: 12, background: '#08101b' }}>
+                              <p style={{ margin: '0 0 6px' }}><strong>Scan #{index + 1}</strong></p>
+                              <p style={{ margin: '0 4px 2px' }}><strong>Time:</strong> {location.scanned_at ? new Date(location.scanned_at).toLocaleString() : 'Unknown'}</p>
+                              <p style={{ margin: '0 4px 2px' }}><strong>Place:</strong> {location.city || 'Unknown city'}, {location.country || 'Unknown country'}</p>
+                              {(location.latitude != null && location.longitude != null) && (
+                                <p style={{ margin: '0 4px 2px' }}><strong>Coordinates:</strong> {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</p>
+                              )}
+                              {location.map_url && (
+                                <a className="link-btn" href={location.map_url} target="_blank" rel="noreferrer">Open map</a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           )}
         </div>
