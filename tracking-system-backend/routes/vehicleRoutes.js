@@ -8,6 +8,7 @@ async function ensureSoftDeleteColumns() {
   try {
     await pool.query("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE");
     await pool.query("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_display_name VARCHAR(255)");
+    await pool.query("ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS do_not_disturb BOOLEAN DEFAULT FALSE");
     await pool.query(`DO $$
 BEGIN
   ALTER TABLE vehicles ALTER COLUMN vehicle_number DROP NOT NULL;
@@ -84,7 +85,8 @@ router.post("/scan", async (req, res) => {
       SELECT v.*, u.email, u.subscription_end
       FROM vehicles v
       JOIN users u ON v.user_id = u.id
-      WHERE UPPER(v.vehicle_number) = UPPER($1) AND COALESCE(v.is_deleted, false) = false
+      WHERE (UPPER(v.vehicle_number) = UPPER($1) OR UPPER(v.vehicle_display_name) = UPPER($1))
+        AND COALESCE(v.is_deleted, false) = false
       `,
       [vehicleNumber]
     );
@@ -141,6 +143,7 @@ router.post("/scan", async (req, res) => {
       phone: maskedPhone,
       ownerPhone: vehicle.owner_phone,
       emergencyContact: vehicle.emergency_contact,
+      doNotDisturb: Boolean(vehicle.do_not_disturb),
       latitude,
       longitude,
       mapUrl,
@@ -296,8 +299,9 @@ router.get("/my", verifyToken, async (req, res) => {
     const vehicles = await Promise.all(
       result.rows.map(async (vehicle) => {
         let qrImage = null;
-        if (vehicle.is_verified && vehicle.vehicle_number) {
-          const qrData = `https://tracking-system-liart.vercel.app/scan/${vehicle.vehicle_number}`;
+        const identifier = vehicle.vehicle_display_name || vehicle.vehicle_number;
+        if (vehicle.is_verified && identifier) {
+          const qrData = `https://tracking-system-liart.vercel.app/scan/${encodeURIComponent(identifier)}`;
           qrImage = await QRCode.toDataURL(qrData);
         }
 
@@ -351,7 +355,7 @@ router.patch("/delete/:vehicleId", verifyToken, async (req, res) => {
 router.put("/update/:vehicleId", verifyToken, uploadFields, async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    const { vehicleNumber, vehicleDisplayName, ownerName, ownerPhone, emergencyContact } = req.body;
+    const { vehicleNumber, vehicleDisplayName, ownerName, ownerPhone, emergencyContact, doNotDisturb } = req.body;
     const rcFile = req.files?.rc?.[0];
     const adharFile = req.files?.adhar?.[0];
 
@@ -379,6 +383,11 @@ router.put("/update/:vehicleId", verifyToken, uploadFields, async (req, res) => 
 
     const rcFileBuffer = rcFile ? fs.readFileSync(rcFile.path) : null;
     const adharFileBuffer = adharFile ? fs.readFileSync(adharFile.path) : null;
+    const doNotDisturbValue = doNotDisturb === undefined || doNotDisturb === null
+      ? null
+      : (typeof doNotDisturb === "string"
+          ? doNotDisturb.toLowerCase() === "true"
+          : Boolean(doNotDisturb));
 
     await pool.query(
       `UPDATE vehicles SET
@@ -387,19 +396,21 @@ router.put("/update/:vehicleId", verifyToken, uploadFields, async (req, res) => 
           owner_name = $3,
           owner_phone = $4,
           emergency_contact = $5,
-          rc_document = COALESCE($6, rc_document),
-          adhar_document = COALESCE($7, adhar_document),
-          rc_document_name = COALESCE($8, rc_document_name),
-          adhar_document_name = COALESCE($9, adhar_document_name),
-          rc_document_data = COALESCE($10, rc_document_data),
-          adhar_document_data = COALESCE($11, adhar_document_data)
-        WHERE id = $12`,
+          do_not_disturb = COALESCE($6, do_not_disturb),
+          rc_document = COALESCE($7, rc_document),
+          adhar_document = COALESCE($8, adhar_document),
+          rc_document_name = COALESCE($9, rc_document_name),
+          adhar_document_name = COALESCE($10, adhar_document_name),
+          rc_document_data = COALESCE($11, rc_document_data),
+          adhar_document_data = COALESCE($12, adhar_document_data)
+        WHERE id = $13`,
       [
         vehicleNumber ? vehicleNumber.toUpperCase() : null,
         vehicleDisplayName || null,
         ownerName,
         ownerPhone,
         emergencyContact,
+        doNotDisturbValue,
         rcFile ? rcFile.filename : null,
         adharFile ? adharFile.filename : null,
         rcFile ? rcFile.originalname : null,
@@ -630,7 +641,8 @@ router.get("/call/:vehicleNumber", async (req, res) => {
       `SELECT v.owner_phone, u.subscription_end
        FROM vehicles v
        JOIN users u ON v.user_id = u.id
-       WHERE v.vehicle_number = $1 AND COALESCE(v.is_deleted, false) = false`,
+       WHERE (v.vehicle_number = $1 OR v.vehicle_display_name = $1)
+         AND COALESCE(v.is_deleted, false) = false`,
       [vehicleNumber]
     );
 
@@ -669,7 +681,8 @@ router.post("/connect", async (req, res) => {
       `SELECT v.owner_phone, u.subscription_end
        FROM vehicles v
        JOIN users u ON v.user_id = u.id
-       WHERE v.vehicle_number = $1 AND COALESCE(v.is_deleted, false) = false`,
+       WHERE (v.vehicle_number = $1 OR v.vehicle_display_name = $1)
+         AND COALESCE(v.is_deleted, false) = false`,
       [vehicleNumber]
     );
 
@@ -733,7 +746,8 @@ router.get("/incoming-call", async (req, res) => {
       `SELECT v.owner_phone, v.emergency_contact, u.subscription_end
        FROM vehicles v
        JOIN users u ON v.user_id = u.id
-       WHERE v.vehicle_number = $1 AND COALESCE(v.is_deleted, false) = false`,
+       WHERE (v.vehicle_number = $1 OR v.vehicle_display_name = $1)
+         AND COALESCE(v.is_deleted, false) = false`,
       [vehicleNumber]
     );
 
