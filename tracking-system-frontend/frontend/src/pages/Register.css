@@ -287,6 +287,12 @@
   box-shadow: 0 0 0 4px rgba(94, 255, 209, 0.15);
   background: rgba(255, 255, 255, 0.05);
 }
+.register-input-error,
+.register-select-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.14);
+  background: rgba(255, 238, 238, 0.08);
+}
 .register-input-field:disabled,
 .register-select-field:disabled {
   background: rgba(255, 255, 255, 0.015);
