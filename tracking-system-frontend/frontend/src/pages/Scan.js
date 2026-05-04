@@ -157,15 +157,6 @@ function Scan() {
               {scanLocationError && (
                 <p style={{ color: '#f59e0b', fontWeight: 700, marginTop: 12 }}>{scanLocationError}</p>
               )}
-
-              {(scanLocation || serverScanLocation) && (
-                <div style={{ marginTop: 12 }}>
-                  <p><strong>Scanned at:</strong> {(scanLocation || serverScanLocation).latitude.toFixed(6)}, {(scanLocation || serverScanLocation).longitude.toFixed(6)}</p>
-                  {scanAccuracy != null && scanLocation && (
-                    <p style={{ margin: 2, color: '#64748b' }}>Accuracy: {scanAccuracy} meters</p>
-                  )}
-                </div>
-              )}
             </div>
 
             <div className="button-row" style={{ flexDirection: "column", alignItems: "stretch", marginTop: 8 }}>
