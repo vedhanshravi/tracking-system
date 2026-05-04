@@ -14,6 +14,17 @@ function Dashboard() {
   const [showAddVehicleErrorModal, setShowAddVehicleErrorModal] = useState(false);
   const [addVehicleErrorMessage, setAddVehicleErrorMessage] = useState("");
 
+  const [actionModal, setActionModal] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    confirmText: "OK",
+    cancelText: "",
+    isError: false,
+    onConfirm: null,
+    onCancel: null,
+  });
+
   const getUserFullName = user
     ? `${user.first_name || ""}${user.middle_name ? ` ${user.middle_name}` : ""}${user.last_name ? ` ${user.last_name}` : ""}`.trim()
     : "";
@@ -57,6 +68,29 @@ function Dashboard() {
   const handleAddVehicleErrorOk = () => {
     setShowAddVehicleErrorModal(false);
   };
+
+  const openActionModal = ({ title, message, confirmText = "OK", cancelText = "", isError = false, onConfirm = null, onCancel = null }) => {
+    setActionModal({
+      visible: true,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      isError,
+      onConfirm,
+      onCancel,
+    });
+  };
+
+  const closeActionModal = () => {
+    setActionModal((prev) => ({
+      ...prev,
+      visible: false,
+      onConfirm: null,
+      onCancel: null,
+    }));
+  };
+
   const [ownerName, setOwnerName] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
@@ -293,7 +327,13 @@ function Dashboard() {
     });
 
     if (!vehicleDisplayName || ownerPhoneErr || emergencyContactErr) {
-      alert("Please fill all required fields with valid values.");
+      openActionModal({
+        title: "Incomplete vehicle details",
+        message: "Please fill all required fields with valid values.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
       return;
     }
 
@@ -402,11 +442,7 @@ function Dashboard() {
     return false;
   };
 
-  const handleDeleteVehicle = async (vehicleId) => {
-    if (!window.confirm("Delete this vehicle? This will hide it from your dashboard.")) {
-      return;
-    }
-
+  const performDeleteVehicle = async (vehicleId) => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -422,15 +458,50 @@ function Dashboard() {
       );
 
       const data = await response.json();
-      alert(data.message || "Vehicle deleted");
       if (response.ok) {
-        fetchVehicles();
-        fetchStats();
+        openActionModal({
+          title: "Vehicle deleted successfully",
+          message: data.message || "The vehicle has been removed from your dashboard.",
+          confirmText: "OK",
+          onConfirm: () => {
+            closeActionModal();
+            fetchVehicles();
+            fetchStats();
+          },
+        });
+      } else {
+        openActionModal({
+          title: "Delete failed",
+          message: data.message || "Failed to delete vehicle. Try again.",
+          confirmText: "OK",
+          isError: true,
+          onConfirm: closeActionModal,
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to delete vehicle. Try again.");
+      openActionModal({
+        title: "Delete failed",
+        message: "Failed to delete vehicle. Try again.",
+        confirmText: "OK",
+        isError: true,
+        onConfirm: closeActionModal,
+      });
     }
+  };
+
+  const confirmDeleteVehicle = (vehicleId) => {
+    openActionModal({
+      title: "Delete this vehicle?",
+      message: "Delete this vehicle? This will hide it from your dashboard.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      onConfirm: () => {
+        closeActionModal();
+        performDeleteVehicle(vehicleId);
+      },
+      onCancel: closeActionModal,
+    });
   };
 
   if (!user) return <p>Loading...</p>;
@@ -955,7 +1026,7 @@ function Dashboard() {
                       </div>
                     )}
 
-                    <button className="danger-btn vehicle-card-delete" type="button" onClick={() => handleDeleteVehicle(v.id)}>
+                    <button className="danger-btn vehicle-card-delete" type="button" onClick={() => confirmDeleteVehicle(v.id)}>
                       Delete Vehicle
                     </button>
                   </div>
@@ -1035,6 +1106,51 @@ function Dashboard() {
             </div>
           )}
 
+          {actionModal.visible && (
+            <div className="register-modal-overlay">
+              <div className="register-modal-content">
+                <div className="register-modal-icon" style={{ background: actionModal.isError ? 'linear-gradient(135deg, #ff8a9b, #ff6b7a)' : 'linear-gradient(135deg, var(--accent), var(--primary))', color: actionModal.isError ? '#fff' : '#022016' }}>
+                  {actionModal.isError ? (
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                  ) : (
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+                <h3 className="register-modal-title">{actionModal.title}</h3>
+                <p className="register-modal-message">{actionModal.message}</p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  {actionModal.cancelText ? (
+                    <button
+                      className="secondary-btn"
+                      onClick={() => {
+                        if (actionModal.onCancel) actionModal.onCancel();
+                        closeActionModal();
+                      }}
+                      style={{ minWidth: 120, justifyContent: 'center' }}
+                    >
+                      {actionModal.cancelText}
+                    </button>
+                  ) : null}
+                  <button
+                    className="register-primary-btn"
+                    onClick={() => {
+                      if (actionModal.onConfirm) actionModal.onConfirm();
+                      else closeActionModal();
+                    }}
+                    style={{ minWidth: 160, justifyContent: 'center' }}
+                  >
+                    {actionModal.confirmText}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {activeTab === "analytics" && (
             <div style={{ display: 'grid', gap: 16 }}>
