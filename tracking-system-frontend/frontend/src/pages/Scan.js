@@ -7,11 +7,15 @@ function Scan() {
   const [owner, setOwner] = useState(null);
   const [error, setError] = useState("");
   const [scanLocation, setScanLocation] = useState(null);
+  const [serverScanLocation, setServerScanLocation] = useState(null);
+  const [scanAccuracy, setScanAccuracy] = useState(null);
   const [scanLocationError, setScanLocationError] = useState("");
   const [isFetchingScanLocation, setIsFetchingScanLocation] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
+    let watchId = null;
+    let fetchTriggered = false;
 
     const fetchVehicle = async (coords) => {
       try {
@@ -19,6 +23,7 @@ function Scan() {
         if (coords?.latitude != null && coords?.longitude != null) {
           payload.scanLatitude = coords.latitude;
           payload.scanLongitude = coords.longitude;
+          if (coords.accuracy != null) payload.scanAccuracy = coords.accuracy;
         }
 
         const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/scan`, {
@@ -39,45 +44,71 @@ function Scan() {
         }
 
         setOwner(data);
+        if (data?.scanLatitude != null && data?.scanLongitude != null) {
+          setServerScanLocation({
+            latitude: data.scanLatitude,
+            longitude: data.scanLongitude,
+          });
+        }
       } catch (err) {
         if (!isMounted) return;
+        console.error("Scan error:", err);
         setError("Server error");
       }
     };
 
-    const fetchWithLocation = () => {
-      if (!navigator.geolocation) {
-        setScanLocationError("Location is not available in this browser.");
-        setIsFetchingScanLocation(false);
-        fetchVehicle(null);
-        return;
+    const handlePosition = (position) => {
+      if (!isMounted) return;
+      const coords = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      };
+      setScanLocation(coords);
+      setScanAccuracy(coords.accuracy);
+      setScanLocationError("");
+      setIsFetchingScanLocation(false);
+      if (!fetchTriggered) {
+        fetchTriggered = true;
+        fetchVehicle(coords);
       }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          if (!isMounted) return;
-          const coords = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
-          setScanLocation(coords);
-          setIsFetchingScanLocation(false);
-          fetchVehicle(coords);
-        },
-        (_) => {
-          if (!isMounted) return;
-          setScanLocationError("Unable to get current location. Please allow location access.");
-          setIsFetchingScanLocation(false);
-          fetchVehicle(null);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
     };
 
-    fetchWithLocation();
+    const handleLocationError = (error) => {
+      if (!isMounted) return;
+      let errorMsg = "Unable to get current location.";
+      if (error.code === 1) {
+        errorMsg = "Location permission denied. Please allow location access in browser settings.";
+      } else if (error.code === 2) {
+        errorMsg = "Location temporarily unavailable. Please try again.";
+      } else if (error.code === 3) {
+        errorMsg = "Location request timed out. Please try again.";
+      }
+      setScanLocationError(errorMsg);
+      setIsFetchingScanLocation(false);
+      if (!fetchTriggered) {
+        fetchTriggered = true;
+        fetchVehicle(null);
+      }
+    };
+
+    if (!navigator.geolocation) {
+      setScanLocationError("Location is not available in this browser.");
+      setIsFetchingScanLocation(false);
+      fetchVehicle(null);
+    } else {
+      watchId = navigator.geolocation.watchPosition(handlePosition, handleLocationError, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      });
+    }
 
     return () => {
       isMounted = false;
+      if (watchId != null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
     };
   }, [vehicleNumber]);
 
@@ -125,11 +156,14 @@ function Scan() {
                 <p style={{ color: '#f59e0b', fontWeight: 700, marginTop: 12 }}>{scanLocationError}</p>
               )}
 
-              {scanLocation && (
+              {(scanLocation || serverScanLocation) && (
                 <div style={{ marginTop: 12 }}>
-                  <p><strong>Scanned at:</strong> {scanLocation.latitude.toFixed(6)}, {scanLocation.longitude.toFixed(6)}</p>
+                  <p><strong>Scanned at:</strong> {(scanLocation || serverScanLocation).latitude.toFixed(6)}, {(scanLocation || serverScanLocation).longitude.toFixed(6)}</p>
+                  {scanAccuracy != null && scanLocation && (
+                    <p style={{ margin: 2, color: '#64748b' }}>Accuracy: {scanAccuracy} meters</p>
+                  )}
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${scanLocation.latitude},${scanLocation.longitude}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${(scanLocation || serverScanLocation).latitude},${(scanLocation || serverScanLocation).longitude}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="outline-btn"

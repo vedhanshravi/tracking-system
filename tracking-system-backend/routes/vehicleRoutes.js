@@ -77,7 +77,7 @@ const uploadFields = upload.fields([{ name: "rc", maxCount: 1 }, { name: "adhar"
 global.currentVehicleCall = null;
 
 router.post("/scan", async (req, res) => {
-  const { vehicleNumber } = req.body;
+  const { vehicleNumber, scanLatitude, scanLongitude, scanAccuracy } = req.body;
 
   try {
     const result = await pool.query(
@@ -97,25 +97,42 @@ router.post("/scan", async (req, res) => {
 
     const vehicle = result.rows[0];
 
-    // 🌍 Get IP address of requester
-    const forwarded = req.headers["x-forwarded-for"];
-    const clientIp = forwarded ? forwarded.split(",")[0].trim() : req.socket.remoteAddress;
-    const probeIp = (clientIp === "::1" || clientIp.startsWith("127.")) ? "8.8.8.8" : clientIp;
+    const lat = scanLatitude != null ? parseFloat(scanLatitude) : null;
+    const lon = scanLongitude != null ? parseFloat(scanLongitude) : null;
+    const hasScanCoords = !Number.isNaN(lat) && !Number.isNaN(lon);
 
-    // 🌍 Get location
-    const geoResponse = await fetch(
-      `http://ip-api.com/json/${probeIp}?fields=status,country,city,query,lat,lon`
-    );
-    const geoData = await geoResponse.json();
+    let city = "Unknown city";
+    let country = "Unknown country";
+    let ip = null;
+    let latitude = null;
+    let longitude = null;
+    let mapUrl = null;
 
-    const city = geoData.city || "Unknown city";
-    const country = geoData.country || "Unknown country";
-    const latitude = geoData.lat != null ? geoData.lat : null;
-    const longitude = geoData.lon != null ? geoData.lon : null;
-    const ip = geoData.query || probeIp;
-    const mapUrl = latitude !== null && longitude !== null
-      ? `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
-      : null;
+    if (hasScanCoords) {
+      latitude = lat;
+      longitude = lon;
+      mapUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+    } else {
+      // 🌍 Get IP address of requester
+      const forwarded = req.headers["x-forwarded-for"];
+      const clientIp = forwarded ? forwarded.split(",")[0].trim() : req.socket.remoteAddress;
+      const probeIp = (clientIp === "::1" || clientIp.startsWith("127.")) ? "8.8.8.8" : clientIp;
+
+      // 🌍 Get location via IP fallback
+      const geoResponse = await fetch(
+        `http://ip-api.com/json/${probeIp}?fields=status,country,city,query,lat,lon`
+      );
+      const geoData = await geoResponse.json();
+
+      city = geoData.city || "Unknown city";
+      country = geoData.country || "Unknown country";
+      latitude = geoData.lat != null ? geoData.lat : null;
+      longitude = geoData.lon != null ? geoData.lon : null;
+      ip = geoData.query || probeIp;
+      mapUrl = latitude !== null && longitude !== null
+        ? `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+        : null;
+    }
 
     // 🔥 Insert scan with location
     await pool.query(
@@ -147,13 +164,21 @@ router.post("/scan", async (req, res) => {
       latitude,
       longitude,
       mapUrl,
+      scanLatitude: hasScanCoords ? latitude : null,
+      scanLongitude: hasScanCoords ? longitude : null,
+      scanAccuracy: hasScanCoords ? parseFloat(scanAccuracy) : null,
     });
 
+    const coordinatesText = hasScanCoords
+      ? ` Coordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}.`
+      : "";
     const locationText = mapUrl ? ` Location: ${mapUrl}` : "";
+    const placeText = hasScanCoords ? "at the scanned coordinates" : `in ${city}, ${country}`;
+
     // 🔔 Send SMS via Twilio asynchronously (doesn't block the response)
     sendSmsMessage(
       vehicle.owner_phone,
-      `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} in ${city}, ${country}.${locationText}`
+      `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} ${placeText}.${coordinatesText}${locationText}`
     ).catch(err => console.error('SMS send failed:', err));
 
   } catch (err) {
