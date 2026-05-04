@@ -143,6 +143,7 @@ router.post("/scan", async (req, res) => {
       phone: maskedPhone,
       ownerPhone: vehicle.owner_phone,
       emergencyContact: vehicle.emergency_contact,
+      doNotDisturb: Boolean(vehicle.do_not_disturb),
       latitude,
       longitude,
       mapUrl,
