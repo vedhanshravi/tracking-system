@@ -340,10 +340,21 @@ function Dashboard() {
       vehicleNumberError: vehicleNumberErr,
     });
 
+    let actionMessage = "Please fill all required fields with valid values.";
+    if (!vehicleDisplayName) {
+      actionMessage = "Vehicle display name is required.";
+    } else if (ownerPhoneErr) {
+      actionMessage = `Owner phone error: ${ownerPhoneErr}.`;
+    } else if (emergencyContactErr) {
+      actionMessage = `Emergency contact error: ${emergencyContactErr}.`;
+    } else if (vehicleNumberErr) {
+      actionMessage = `Vehicle number error: ${vehicleNumberErr}.`;
+    }
+
     if (!vehicleDisplayName || ownerPhoneErr || emergencyContactErr || vehicleNumberErr) {
       openActionModal({
-        title: "Incomplete vehicle details",
-        message: "Please fill all required fields with valid values.",
+        title: "Invalid vehicle details",
+        message: actionMessage,
         confirmText: "OK",
         isError: true,
         onConfirm: closeActionModal,
