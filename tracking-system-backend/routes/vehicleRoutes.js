@@ -53,7 +53,7 @@ $$;`);
 ensureSoftDeleteColumns();
 const path = require("path");
 const fs = require("fs");
-const { sendSmsMessage, client } = require("../utils/twilioCall");
+const { sendSmsMessage } = require("../utils/twilioCall");
 
 // Ensure upload dir exists
 const uploadDir = path.join(__dirname, "..", "uploads");
@@ -175,7 +175,7 @@ router.post("/scan", async (req, res) => {
     const locationText = mapUrl ? ` Location: ${mapUrl}` : "";
     const placeText = hasScanCoords ? "at the scanned coordinates" : `in ${city}, ${country}`;
 
-    // 🔔 Send SMS via Twilio asynchronously (doesn't block the response)
+    // 🔔 Send SMS via Exotel asynchronously (doesn't block the response)
     sendSmsMessage(
       vehicle.owner_phone,
       `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} ${placeText}.${coordinatesText}${locationText}`
@@ -676,7 +676,7 @@ router.post("/verify/:vehicleId", verifyToken, verifyAdmin, async (req, res) => 
  
 
 
-// GET /call/:vehicleNumber - returns TwiML to dial owner
+// GET /call/:vehicleNumber - returns Exotel XML to dial owner
 router.get("/call/:vehicleNumber", async (req, res) => {
   const { vehicleNumber } = req.params;
 
@@ -699,16 +699,16 @@ router.get("/call/:vehicleNumber", async (req, res) => {
       return res.status(403).send("Owner subscription has expired. Call not allowed.");
     }
 
-    // Return TwiML to dial the owner
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+    // Return Exotel XML to dial the owner
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${process.env.TWILIO_PHONE_NUMBER}">
+  <Dial callerId="${process.env.EXOTEL_PHONE_NUMBER}">
     ${ownerPhone}
   </Dial>
 </Response>`;
 
     res.type('text/xml');
-    res.send(twiml);
+    res.send(xml);
 
   } catch (err) {
     console.error(err);
@@ -770,20 +770,20 @@ router.post("/set-twiml", async (req, res) => {
   }
 });
 
-// GET /incoming-call - Twilio webhook for incoming calls
-router.get("/incoming-call", async (req, res) => {
+// GET/POST /incoming-call - Exotel webhook for incoming calls
+router.all("/incoming-call", async (req, res) => {
   try {
     const callContext = global.currentVehicleCall;
     const vehicleNumber = callContext?.vehicleNumber;
     const callType = callContext?.callType || "owner";
 
     if (!vehicleNumber) {
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>No vehicle selected for call</Say>
 </Response>`;
       res.type('text/xml');
-      return res.send(twiml);
+      return res.send(xml);
     }
 
     const result = await pool.query(
@@ -818,23 +818,23 @@ router.get("/incoming-call", async (req, res) => {
     const targetPhone = callType === "emergency" ? row.emergency_contact : row.owner_phone;
 
     if (!targetPhone) {
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>Phone number not found for this contact</Say>
 </Response>`;
       res.type('text/xml');
-      return res.send(twiml);
+      return res.send(xml);
     }
 
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${process.env.TWILIO_PHONE_NUMBER}">
+  <Dial callerId="${process.env.EXOTEL_PHONE_NUMBER}">
     ${targetPhone}
   </Dial>
 </Response>`;
 
     res.type('text/xml');
-    res.send(twiml);
+    res.send(xml);
 
   } catch (err) {
     console.error(err);

@@ -18,8 +18,8 @@ function Call() {
           body: JSON.stringify({ vehicleNumber, callType }),
         });
 
-        const twilioNumber = process.env.REACT_APP_TWILIO_PHONE_NUMBER || "+13502206189";
-        window.location.href = `tel:${twilioNumber}`;
+        const exotelNumber = process.env.REACT_APP_EXOTEL_PHONE_NUMBER || "08040265507";
+        window.location.href = `tel:${exotelNumber}`;
       } catch (error) {
         console.error("Error initiating call:", error);
       }
