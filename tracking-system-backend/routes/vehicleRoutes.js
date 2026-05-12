@@ -73,6 +73,9 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: MAX_FILE_SIZE } });
 const uploadFields = upload.fields([{ name: "rc", maxCount: 1 }, { name: "adhar", maxCount: 1 }]);
 
+// Global variable to store the current vehicle number for incoming calls
+global.currentVehicleCall = null;
+
 router.post("/scan", async (req, res) => {
   const { vehicleNumber, scanLatitude, scanLongitude, scanAccuracy } = req.body;
 
@@ -673,18 +676,109 @@ router.post("/verify/:vehicleId", verifyToken, verifyAdmin, async (req, res) => 
  
 
 
-// POST /connect - connect scanner to vehicle owner or emergency contact
-router.post("/connect", async (req, res) => {
-  const { scannerPhone, vehicleNumber, callType } = req.body;
-  const type = callType === "emergency" ? "emergency" : "owner";
-
-  if (!scannerPhone || !vehicleNumber) {
-    return res.status(400).json({ message: "scannerPhone and vehicleNumber are required" });
-  }
+// GET /call/:vehicleNumber - returns TwiML to dial owner
+router.get("/call/:vehicleNumber", async (req, res) => {
+  const { vehicleNumber } = req.params;
 
   try {
     const result = await pool.query(
-      `SELECT v.owner_phone, v.emergency_contact, v.do_not_disturb, u.subscription_end
+      `SELECT v.owner_phone, u.subscription_end
+       FROM vehicles v
+       JOIN users u ON v.user_id = u.id
+       WHERE (v.vehicle_number = $1 OR v.vehicle_display_name = $1)
+         AND COALESCE(v.is_deleted, false) = false`,
+      [vehicleNumber]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).send("Vehicle not found");
+    }
+
+    const { owner_phone: ownerPhone, subscription_end: subscriptionEnd } = result.rows[0];
+    if (!subscriptionEnd || new Date(subscriptionEnd) < new Date()) {
+      return res.status(403).send("Owner subscription has expired. Call not allowed.");
+    }
+
+    // Return TwiML to dial the owner
+    // Redirect to Exotel call initiation
+    res.json({
+      message: "Call initiated",
+      callInitiated: true
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Server error");
+  }
+});
+
+// POST /connect - connect scanner to owner
+router.post("/connect", async (req, res) => {
+  const { scannerPhone, vehicleNumber } = req.body;
+
+  try {
+    const result = await pool.query(
+      `SELECT v.owner_phone, u.subscription_end
+       FROM vehicles v
+       JOIN users u ON v.user_id = u.id
+       WHERE (v.vehicle_number = $1 OR v.vehicle_display_name = $1)
+         AND COALESCE(v.is_deleted, false) = false`,
+      [vehicleNumber]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Vehicle not found" });
+    }
+
+    const { owner_phone: ownerPhone, subscription_end: subscriptionEnd } = result.rows[0];
+    if (!subscriptionEnd || new Date(subscriptionEnd) < new Date()) {
+      return res.status(403).json({ message: "Owner subscription has expired. Connection not allowed." });
+    }
+
+    const callData = await initiateCall(scannerPhone, ownerPhone);
+
+    res.json({
+      message: "Connecting...",
+      callData,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Connection failed" });
+  }
+});
+
+// POST /set-twiml - store vehicle number and call type for incoming call
+router.post("/set-twiml", async (req, res) => {
+  const { vehicleNumber, callType } = req.body;
+  const type = callType === "emergency" ? "emergency" : "owner";
+
+  try {
+    // Store the current call context globally
+    global.currentVehicleCall = { vehicleNumber, callType: type };
+
+    console.log(`Set current vehicle call to: ${vehicleNumber} (${type})`);
+    res.json({ message: "Vehicle call set", vehicleNumber, callType: type });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to set vehicle call" });
+  }
+});
+
+// GET /incoming-call - Twilio webhook for incoming calls
+router.get("/incoming-call", async (req, res) => {
+  try {
+    const callContext = global.currentVehicleCall;
+    const vehicleNumber = callContext?.vehicleNumber;
+    const callType = callContext?.callType || "owner";
+
+    if (!vehicleNumber) {
+      return res.status(400).json({ message: "No vehicle selected for call" });
+    }
+
+    const result = await pool.query(
+      `SELECT v.owner_phone, v.emergency_contact, u.subscription_end
        FROM vehicles v
        JOIN users u ON v.user_id = u.id
        WHERE (v.vehicle_number = $1 OR v.vehicle_display_name = $1)
@@ -697,35 +791,26 @@ router.post("/connect", async (req, res) => {
     }
 
     const row = result.rows[0];
-    const {
-      owner_phone: ownerPhone,
-      emergency_contact: emergencyContact,
-      do_not_disturb: doNotDisturb,
-      subscription_end: subscriptionEnd,
-    } = row;
-
+    const subscriptionEnd = row.subscription_end;
     if (!subscriptionEnd || new Date(subscriptionEnd) < new Date()) {
-      return res.status(403).json({ message: "Owner subscription has expired. Connection not allowed." });
+      return res.status(403).json({ message: "Your subscription has expired. Contact is not allowed." });
     }
 
-    if (doNotDisturb && type === "owner") {
-      return res.status(403).json({ message: "Owner is in Do Not Disturb mode. Please use the emergency contact." });
-    }
+    const targetPhone = callType === "emergency" ? row.emergency_contact : row.owner_phone;
 
-    const targetPhone = type === "emergency" ? emergencyContact : ownerPhone;
     if (!targetPhone) {
-      return res.status(400).json({ message: "Target phone number not available for this contact." });
+      return res.status(400).json({ message: "Phone number not found for this contact" });
     }
 
-    const callData = await initiateCall(scannerPhone, targetPhone);
-
+    // Initiate call via Exotel
     res.json({
-      message: "Connecting...",
-      callData,
+      message: "Call initiated",
+      callInitiated: true
     });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Connection failed" });
+    res.status(500).send("Server error");
   }
 });
 
