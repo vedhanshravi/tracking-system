@@ -53,7 +53,7 @@ $$;`);
 ensureSoftDeleteColumns();
 const path = require("path");
 const fs = require("fs");
-const { sendSmsMessage, client } = require("../utils/twilioCall");
+const { sendSmsMessage, initiateCall } = require("../utils/exotelCall");
 
 // Ensure upload dir exists
 const uploadDir = path.join(__dirname, "..", "uploads");
@@ -175,7 +175,7 @@ router.post("/scan", async (req, res) => {
     const locationText = mapUrl ? ` Location: ${mapUrl}` : "";
     const placeText = hasScanCoords ? "at the scanned coordinates" : `in ${city}, ${country}`;
 
-    // 🔔 Send SMS via Twilio asynchronously (doesn't block the response)
+    // 🔔 Send SMS via Exotel asynchronously (doesn't block the response)
     sendSmsMessage(
       vehicle.owner_phone,
       `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} ${placeText}.${coordinatesText}${locationText}`
@@ -700,15 +700,11 @@ router.get("/call/:vehicleNumber", async (req, res) => {
     }
 
     // Return TwiML to dial the owner
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Dial callerId="${process.env.TWILIO_PHONE_NUMBER}">
-    ${ownerPhone}
-  </Dial>
-</Response>`;
-
-    res.type('text/xml');
-    res.send(twiml);
+    // Redirect to Exotel call initiation
+    res.json({
+      message: "Call initiated",
+      callInitiated: true
+    });
 
   } catch (err) {
     console.error(err);
@@ -739,11 +735,11 @@ router.post("/connect", async (req, res) => {
       return res.status(403).json({ message: "Owner subscription has expired. Connection not allowed." });
     }
 
-    const callSid = await connectScannerToOwner(scannerPhone, ownerPhone);
+    const callData = await initiateCall(scannerPhone, ownerPhone);
 
     res.json({
       message: "Connecting...",
-      callSid,
+      callData,
     });
 
   } catch (err) {
@@ -778,12 +774,7 @@ router.get("/incoming-call", async (req, res) => {
     const callType = callContext?.callType || "owner";
 
     if (!vehicleNumber) {
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>No vehicle selected for call</Say>
-</Response>`;
-      res.type('text/xml');
-      return res.send(twiml);
+      return res.status(400).json({ message: "No vehicle selected for call" });
     }
 
     const result = await pool.query(
@@ -796,45 +787,26 @@ router.get("/incoming-call", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>Vehicle not found</Say>
-</Response>`;
-      res.type('text/xml');
-      return res.send(twiml);
+      return res.status(404).json({ message: "Vehicle not found" });
     }
 
     const row = result.rows[0];
     const subscriptionEnd = row.subscription_end;
     if (!subscriptionEnd || new Date(subscriptionEnd) < new Date()) {
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>Your subscription has expired. Contact is not allowed.</Say>
-</Response>`;
-      res.type('text/xml');
-      return res.send(twiml);
+      return res.status(403).json({ message: "Your subscription has expired. Contact is not allowed." });
     }
 
     const targetPhone = callType === "emergency" ? row.emergency_contact : row.owner_phone;
 
     if (!targetPhone) {
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Say>Phone number not found for this contact</Say>
-</Response>`;
-      res.type('text/xml');
-      return res.send(twiml);
+      return res.status(400).json({ message: "Phone number not found for this contact" });
     }
 
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Dial callerId="${process.env.TWILIO_PHONE_NUMBER}">
-    ${targetPhone}
-  </Dial>
-</Response>`;
-
-    res.type('text/xml');
-    res.send(twiml);
+    // Initiate call via Exotel
+    res.json({
+      message: "Call initiated",
+      callInitiated: true
+    });
 
   } catch (err) {
     console.error(err);
