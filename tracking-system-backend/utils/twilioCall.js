@@ -1,6 +1,17 @@
 const https = require("https");
 const { URLSearchParams } = require("url");
 
+function normalizeExotelPhone(phone) {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 10) return `+91${digits}`;
+  if (digits.length === 11 && digits.startsWith("0")) return `+91${digits.slice(1)}`;
+  if (digits.length === 12 && digits.startsWith("91")) return `+${digits}`;
+  if (digits.length === 13 && digits.startsWith("091")) return `+${digits.slice(1)}`;
+  if (digits.length > 12) return `+${digits}`;
+  return `+${digits}`;
+}
+
 async function sendSmsMessage(toPhone, body) {
   const exotelSid = process.env.EXOTEL_SID;
   const exotelToken = process.env.EXOTEL_TOKEN;
@@ -10,9 +21,14 @@ async function sendSmsMessage(toPhone, body) {
     throw new Error("Missing Exotel SMS configuration");
   }
 
+  const normalizedTo = normalizeExotelPhone(toPhone);
+  if (!normalizedTo) {
+    throw new Error("Invalid phone number");
+  }
+
   const payload = new URLSearchParams({
     From: exotelFrom,
-    To: toPhone,
+    To: normalizedTo,
     Body: body,
   }).toString();
 
