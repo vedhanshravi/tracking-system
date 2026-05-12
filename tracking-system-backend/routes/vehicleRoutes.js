@@ -678,8 +678,8 @@ router.post("/connect", async (req, res) => {
   const { scannerPhone, vehicleNumber, callType } = req.body;
   const type = callType === "emergency" ? "emergency" : "owner";
 
-  if (!vehicleNumber) {
-    return res.status(400).json({ message: "vehicleNumber is required" });
+  if (!scannerPhone || !vehicleNumber) {
+    return res.status(400).json({ message: "scannerPhone and vehicleNumber are required" });
   }
 
   try {
@@ -717,12 +717,7 @@ router.post("/connect", async (req, res) => {
       return res.status(400).json({ message: "Target phone number not available for this contact." });
     }
 
-    const fromPhone = scannerPhone || process.env.EXOTEL_FROM_NUMBER;
-    if (!fromPhone) {
-      return res.status(500).json({ message: "Exotel from number is not configured." });
-    }
-
-    const callData = await initiateCall(fromPhone, targetPhone);
+    const callData = await initiateCall(scannerPhone, targetPhone);
 
     res.json({
       message: "Connecting...",
