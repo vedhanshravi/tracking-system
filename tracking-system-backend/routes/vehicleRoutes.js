@@ -53,7 +53,26 @@ $$;`);
 ensureSoftDeleteColumns();
 const path = require("path");
 const fs = require("fs");
-const { sendSmsMessage } = require("../utils/twilioCall");
+const { sendSmsMessage: sendExotelSms } = require("../utils/twilioCall");
+const { sendSmsMessage: sendMsg91Sms } = require("../utils/msg91");
+
+async function notifyOwnerSms(toPhone, body) {
+  try {
+    const result = await sendExotelSms(toPhone, body);
+    console.log("Owner SMS sent via Exotel", { toPhone, result });
+    return result;
+  } catch (exotelError) {
+    console.error("Exotel SMS failed:", exotelError);
+    try {
+      const fallbackResult = await sendMsg91Sms(toPhone, body);
+      console.log("Owner SMS sent via MSG91 fallback", { toPhone, fallbackResult });
+      return fallbackResult;
+    } catch (msg91Error) {
+      console.error("MSG91 fallback SMS failed:", msg91Error);
+      throw msg91Error;
+    }
+  }
+}
 
 // Ensure upload dir exists
 const uploadDir = path.join(__dirname, "..", "uploads");
@@ -174,11 +193,12 @@ router.post("/scan", async (req, res) => {
       : "";
     const locationText = mapUrl ? ` Location: ${mapUrl}` : "";
     const placeText = hasScanCoords ? "at the scanned coordinates" : `in ${city}, ${country}`;
+    const vehicleIdentifier = vehicle.vehicle_number || vehicle.vehicle_display_name || "your vehicle";
 
     // 🔔 Send SMS via Exotel asynchronously (doesn't block the response)
-    sendSmsMessage(
+    notifyOwnerSms(
       vehicle.owner_phone,
-      `Your vehicle ${vehicle.vehicle_number} was scanned at ${new Date().toLocaleString()} ${placeText}.${coordinatesText}${locationText}`
+      `Your vehicle ${vehicleIdentifier} was scanned at ${new Date().toLocaleString()} ${placeText}.${coordinatesText}${locationText}`
     ).catch(err => console.error('SMS send failed:', err));
 
   } catch (err) {
