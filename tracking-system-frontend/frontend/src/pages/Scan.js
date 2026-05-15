@@ -16,6 +16,12 @@ function Scan() {
   const [photoUploadStatus, setPhotoUploadStatus] = useState("");
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
   const [photoUploaded, setPhotoUploaded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalConfirmLabel, setModalConfirmLabel] = useState("OK");
+  const [modalCancelLabel, setModalCancelLabel] = useState("");
+  const [modalAction, setModalAction] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -163,21 +169,40 @@ function Scan() {
     }
   };
 
+  const openModal = ({ title, message, confirmLabel = "OK", cancelLabel = "", action = null }) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalConfirmLabel(confirmLabel);
+    setModalCancelLabel(cancelLabel);
+    setModalAction(action);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalAction(null);
+  };
+
   const handleOwnerCall = () => {
     if (!photoUploaded) {
-      setPhotoUploadStatus("Please upload a photo before calling the owner.");
+      openModal({
+        title: "Upload Required",
+        message: "Please capture and upload a photo before calling the owner.",
+        confirmLabel: "OK",
+      });
       return;
     }
     startCall("owner");
   };
 
   const handleEmergencyCall = () => {
-    const confirmed = window.confirm(
-      "Genuine emergencies only. Misuse may cause panic and lead to legal consequences."
-    );
-    if (confirmed) {
-      startCall("emergency");
-    }
+    openModal({
+      title: "Emergency Warning",
+      message: "Genuine emergencies only. Misuse may cause panic and lead to legal consequences.",
+      confirmLabel: "Call Emergency Contact",
+      cancelLabel: "Cancel",
+      action: () => startCall("emergency"),
+    });
   };
 
   return (
@@ -228,16 +253,8 @@ function Scan() {
                 type="button"
                 onClick={() => document.getElementById("scan-photo-input")?.click()}
               >
-                📸 {photoUploaded ? "Retake Photo" : "Capture Photo"}
+                📸 {photoUploaded ? "Retake Vehicle Photo" : "Capture Vehicle Photo"}
               </button>
-              <p style={{ marginTop: 8, color: '#2563eb', fontWeight: 600 }}>
-                Photo upload is required before calling the owner and is only used for the Owner call.
-              </p>
-              {!photoUploaded && (
-                <div className="alert-banner" style={{ marginTop: 10, padding: '10px 14px' }}>
-                  Please capture and upload a photo before calling the owner.
-                </div>
-              )}
               {photoUploadStatus && (
                 <p style={{ marginTop: 10, color: photoUploadStatus.includes("failed") ? '#f87171' : '#34d399' }}>
                   {photoUploadStatus}
@@ -253,7 +270,7 @@ function Scan() {
               <button
                 className="primary-btn"
                 onClick={handleOwnerCall}
-                disabled={owner.doNotDisturb || !photoUploaded}
+                disabled={owner.doNotDisturb}
               >
                 📞 Parking issues - Call Owner
               </button>
@@ -270,6 +287,37 @@ function Scan() {
           !error && <p className="page-subtitle">Loading vehicle information...</p>
         )}
       </div>
+      {modalOpen && (
+        <div className="register-modal-overlay">
+          <div className="register-modal-content">
+            <div className="register-modal-icon" style={{ background: 'linear-gradient(135deg, #38e0b2, #5effd1)', color: '#022016' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4.5V12L16.5 14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4.5 12C4.5 7.30558 7.30558 4.5 12 4.5C16.6944 4.5 19.5 7.30558 19.5 12C19.5 16.6944 16.6944 19.5 12 19.5C7.30558 19.5 4.5 16.6944 4.5 12Z" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+            </div>
+            <h3 className="register-modal-title">{modalTitle}</h3>
+            <p className="register-modal-message">{modalMessage}</p>
+            <div className="form-actions" style={{ gap: modalCancelLabel ? 12 : 0 }}>
+              {modalCancelLabel && (
+                <button type="button" className="secondary-btn" onClick={closeModal}>
+                  {modalCancelLabel}
+                </button>
+              )}
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => {
+                  if (modalAction) modalAction();
+                  closeModal();
+                }}
+              >
+                {modalConfirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
