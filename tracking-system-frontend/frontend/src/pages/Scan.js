@@ -12,6 +12,10 @@ function Scan() {
   const [scanAccuracy, setScanAccuracy] = useState(null);
   const [scanLocationError, setScanLocationError] = useState("");
   const [isFetchingScanLocation, setIsFetchingScanLocation] = useState(true);
+  const [scanId, setScanId] = useState(null);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState("");
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+  const [photoUploaded, setPhotoUploaded] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -45,6 +49,7 @@ function Scan() {
         }
 
         setOwner(data);
+        setScanId(data?.scanId || null);
         if (data?.scanLatitude != null && data?.scanLongitude != null) {
           setServerScanLocation({
             latitude: data.scanLatitude,
@@ -125,6 +130,56 @@ function Scan() {
     return digits.length > 3 ? `XXXXXXX${visible}` : phone;
   };
 
+  const handlePhotoCapture = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !scanId) return;
+
+    setPhotoUploadStatus("Uploading photo...");
+
+    try {
+      const formData = new FormData();
+      formData.append("scanId", scanId);
+      formData.append("scanPhoto", file);
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/vehicles/scan/photo`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        setPhotoUploadStatus(data?.message || "Photo upload failed");
+        setPhotoUploaded(false);
+        return;
+      }
+
+      setPhotoPreviewUrl(data.scanImageUrl || URL.createObjectURL(file));
+      setPhotoUploadStatus("Photo uploaded successfully");
+      setPhotoUploaded(true);
+    } catch (uploadError) {
+      console.error("Photo upload error:", uploadError);
+      setPhotoUploadStatus("Photo upload failed");
+      setPhotoUploaded(false);
+    }
+  };
+
+  const handleOwnerCall = () => {
+    if (!photoUploaded) {
+      setPhotoUploadStatus("Please upload a photo before calling the owner.");
+      return;
+    }
+    startCall("owner");
+  };
+
+  const handleEmergencyCall = () => {
+    const confirmed = window.confirm(
+      "Genuine emergencies only. Misuse may cause panic and lead to legal consequences."
+    );
+    if (confirmed) {
+      startCall("emergency");
+    }
+  };
+
   return (
     <div className="page-container">
       <div className="page-card" style={{ maxWidth: 760, margin: "0 auto" }}>
@@ -160,8 +215,55 @@ function Scan() {
             </div>
 
             <div className="button-row" style={{ flexDirection: "column", alignItems: "stretch", marginTop: 8 }}>
-              <button className="primary-btn" onClick={() => startCall("owner")} disabled={owner.doNotDisturb}>📞 Parking issues - Call Owner</button>
-              <button className="secondary-btn" onClick={() => startCall("emergency")} disabled={owner.doNotDisturb || !owner.emergencyContact}>🚑 Medical Emergency - Call Emergency Contact</button>
+              <input
+                id="scan-photo-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ display: "none" }}
+                onChange={handlePhotoCapture}
+              />
+              <button
+                className="secondary-btn"
+                type="button"
+                onClick={() => document.getElementById("scan-photo-input")?.click()}
+              >
+                📸 {photoUploaded ? "Retake Photo" : "Capture Photo"}
+              </button>
+              <p style={{ marginTop: 8, color: '#2563eb', fontWeight: 600 }}>
+                Photo upload is required before calling the owner and is only used for the Owner call.
+              </p>
+              {!photoUploaded && (
+                <div className="alert-banner" style={{ marginTop: 10, padding: '10px 14px' }}>
+                  Please capture and upload a photo before calling the owner.
+                </div>
+              )}
+              {photoUploadStatus && (
+                <p style={{ marginTop: 10, color: photoUploadStatus.includes("failed") ? '#f87171' : '#34d399' }}>
+                  {photoUploadStatus}
+                </p>
+              )}
+              {photoPreviewUrl && (
+                <img
+                  src={photoPreviewUrl}
+                  alt="Scan preview"
+                  style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 12, marginTop: 12 }}
+                />
+              )}
+              <button
+                className="primary-btn"
+                onClick={handleOwnerCall}
+                disabled={owner.doNotDisturb || !photoUploaded}
+              >
+                📞 Parking issues - Call Owner
+              </button>
+              <button
+                className="secondary-btn"
+                onClick={handleEmergencyCall}
+                disabled={owner.doNotDisturb || !owner.emergencyContact}
+              >
+                🚑 Medical Emergency - Call Emergency Contact
+              </button>
             </div>
           </div>
         ) : (

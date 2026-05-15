@@ -50,7 +50,17 @@ $$;`);
   }
 }
 
+async function ensureScanPhotoColumns() {
+  try {
+    await pool.query("ALTER TABLE scans ADD COLUMN IF NOT EXISTS scan_image VARCHAR(255)");
+    await pool.query("ALTER TABLE scans ADD COLUMN IF NOT EXISTS scan_image_name VARCHAR(255)");
+  } catch (err) {
+    console.error("Failed to ensure scan photo columns:", err);
+  }
+}
+
 ensureSoftDeleteColumns();
+ensureScanPhotoColumns();
 const path = require("path");
 const fs = require("fs");
 const { sendSmsMessage: sendExotelSms } = require("../utils/twilioCall");
@@ -83,6 +93,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage, limits: { fileSize: MAX_FILE_SIZE } });
 const uploadFields = upload.fields([{ name: "rc", maxCount: 1 }, { name: "adhar", maxCount: 1 }]);
+const scanPhotoUpload = upload.single("scanPhoto");
 
 // Global variable to store the current vehicle number for incoming calls
 global.currentVehicleCall = null;
@@ -146,7 +157,7 @@ router.post("/scan", async (req, res) => {
     }
 
     // 🔥 Insert scan with location
-    await pool.query(
+    const insertScanResult = await pool.query(
       `
       INSERT INTO scans (
         vehicle_id,
@@ -158,10 +169,12 @@ router.post("/scan", async (req, res) => {
         map_url
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id
       `,
       [vehicle.id, ip, city, country, latitude, longitude, mapUrl]
     );
 
+    const scanId = insertScanResult.rows[0]?.id;
     const maskedPhone =
       "XXXXXXX" + vehicle.owner_phone.slice(-3);
 
@@ -178,6 +191,7 @@ router.post("/scan", async (req, res) => {
       scanLatitude: hasScanCoords ? latitude : null,
       scanLongitude: hasScanCoords ? longitude : null,
       scanAccuracy: hasScanCoords ? parseFloat(scanAccuracy) : null,
+      scanId,
     });
 
     const coordinatesText = hasScanCoords
@@ -193,6 +207,42 @@ router.post("/scan", async (req, res) => {
       `Your vehicle ${vehicleIdentifier} was scanned at ${new Date().toLocaleString()} ${placeText}.${coordinatesText}${locationText}`
     ).catch(err => console.error('SMS send failed:', err));
 
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/scan/photo", scanPhotoUpload, async (req, res) => {
+  try {
+    const { scanId } = req.body;
+    const file = req.file;
+
+    if (!scanId) {
+      return res.status(400).json({ message: "scanId is required" });
+    }
+    if (!file) {
+      return res.status(400).json({ message: "Scan photo file is required" });
+    }
+
+    const result = await pool.query(
+      "SELECT id FROM scans WHERE id = $1",
+      [scanId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Scan record not found" });
+    }
+
+    await pool.query(
+      `UPDATE scans SET scan_image = $1, scan_image_name = $2 WHERE id = $3`,
+      [file.filename, file.originalname, scanId]
+    );
+
+    res.json({
+      message: "Scan photo uploaded successfully",
+      scanImageUrl: `${req.protocol}://${req.get("host")}/uploads/${file.filename}`,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -643,6 +693,8 @@ router.get("/stats", verifyToken, async (req, res) => {
                 'latitude', s2.latitude,
                 'longitude', s2.longitude,
                 'map_url', s2.map_url,
+                'scan_image', s2.scan_image,
+                'scan_image_name', s2.scan_image_name,
                 'scanned_at', s2.scanned_at
               ) AS scan_item
               FROM scans s2
