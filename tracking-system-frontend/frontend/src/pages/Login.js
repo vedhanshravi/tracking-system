@@ -129,7 +129,7 @@ function Login() {
             </div>
             <div>
               <div className="brand-name">TrackPro</div>
-              <div className="brand-tagline">TrackPro - frustration to connection</div>
+              <div className="brand-tagline">Frustration to connection</div>
             </div>
           </div>
 
