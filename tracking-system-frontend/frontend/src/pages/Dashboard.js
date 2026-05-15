@@ -1293,6 +1293,15 @@ function Dashboard() {
                                 {location.map_url && (
                                   <a className="link-btn" href={location.map_url} target="_blank" rel="noreferrer">Open map</a>
                                 )}
+                                {location.scan_image && (
+                                  <div style={{ marginTop: 12 }}>
+                                    <img
+                                      src={`${process.env.REACT_APP_API_URL}/uploads/${location.scan_image}`}
+                                      alt="Scan photo"
+                                      style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 12 }}
+                                    />
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
