@@ -2,7 +2,6 @@ const pool = require("../config/db");
 const bcrypt = require("bcrypt");
 const https = require("https");
 const crypto = require("crypto");
-const { sendSmsMessage } = require("../utils/msg91");
 
 let passwordResetOtpTableCreated = false;
 let subscriptionTableReady = false;
