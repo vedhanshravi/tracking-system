@@ -200,7 +200,11 @@ function Scan() {
     startCall("owner");
   };
 
-  const handleEmergencyCall = () => {
+  const handleEmergencyCall = (event) => {
+    if (event?.preventDefault) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     console.log("Emergency call button clicked - opening modal");
     openModal({
       title: "Emergency Warning",
@@ -288,7 +292,7 @@ function Scan() {
               <button
                 className="secondary-btn"
                 type="button"
-                onClick={handleEmergencyCall}
+                onClick={(event) => handleEmergencyCall(event)}
                 disabled={owner.doNotDisturb || !owner.emergencyContact}
               >
                 🚑 Medical Emergency - Call Emergency Contact
