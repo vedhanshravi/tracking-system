@@ -200,11 +200,7 @@ function Scan() {
     startCall("owner");
   };
 
-  const handleEmergencyCall = (event) => {
-    if (event?.preventDefault) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
+  const handleEmergencyCall = () => {
     console.log("Emergency call button clicked - opening modal");
     openModal({
       title: "Emergency Warning",
@@ -284,6 +280,7 @@ function Scan() {
               )}
               <button
                 className="primary-btn"
+                type="button"
                 onClick={handleOwnerCall}
                 disabled={owner.doNotDisturb}
               >
@@ -292,7 +289,7 @@ function Scan() {
               <button
                 className="secondary-btn"
                 type="button"
-                onClick={(event) => handleEmergencyCall(event)}
+                onClick={handleEmergencyCall}
                 disabled={owner.doNotDisturb || !owner.emergencyContact}
               >
                 🚑 Medical Emergency - Call Emergency Contact
@@ -303,8 +300,13 @@ function Scan() {
           !error && <p className="page-subtitle">Loading vehicle information...</p>
         )}
       </div>
-      <div className={`register-modal-overlay ${!modalOpen ? 'hidden' : ''}`}>
-        <div className="register-modal-content">
+      <div
+        className="register-modal-overlay"
+        style={{ display: modalOpen ? 'flex' : 'none' }}
+        aria-hidden={!modalOpen}
+        onClick={closeModal}
+      >
+        <div className="register-modal-content" onClick={(event) => event.stopPropagation()}>
           <div className="register-modal-icon" style={{ background: modalTitle === "Emergency Warning" ? 'linear-gradient(135deg, #ff8a9b, #ff6b7a)' : 'linear-gradient(135deg, #38e0b2, #5effd1)', color: modalTitle === "Emergency Warning" ? '#fff' : '#022016' }}>
             {modalTitle === "Emergency Warning" ? (
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
