@@ -54,7 +54,6 @@ ensureSoftDeleteColumns();
 const path = require("path");
 const fs = require("fs");
 const { sendSmsMessage: sendExotelSms } = require("../utils/twilioCall");
-const { sendSmsMessage: sendMsg91Sms } = require("../utils/msg91");
 
 async function notifyOwnerSms(toPhone, body) {
   try {
@@ -63,14 +62,7 @@ async function notifyOwnerSms(toPhone, body) {
     return result;
   } catch (exotelError) {
     console.error("Exotel SMS failed:", exotelError);
-    try {
-      const fallbackResult = await sendMsg91Sms(toPhone, body);
-      console.log("Owner SMS sent via MSG91 fallback", { toPhone, fallbackResult });
-      return fallbackResult;
-    } catch (msg91Error) {
-      console.error("MSG91 fallback SMS failed:", msg91Error);
-      throw msg91Error;
-    }
+    throw exotelError;
   }
 }
 
