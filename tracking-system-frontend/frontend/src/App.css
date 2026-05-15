@@ -563,6 +563,12 @@ a { color: var(--accent); text-decoration: none; }
   justify-content: center;
   z-index: 1000;
   animation: fadeUp 0.25s ease-out both;
+  pointer-events: auto;
+}
+
+.register-modal-overlay.hidden {
+  display: none;
+  pointer-events: none;
 }
 
 .register-modal-content {
