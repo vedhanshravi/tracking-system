@@ -24,6 +24,10 @@ function Scan() {
   const [modalAction, setModalAction] = useState(null);
 
   useEffect(() => {
+    console.log("Modal state changed - modalOpen:", modalOpen);
+  }, [modalOpen]);
+
+  useEffect(() => {
     let isMounted = true;
     let watchId = null;
     let fetchTriggered = false;
@@ -170,6 +174,7 @@ function Scan() {
   };
 
   const openModal = ({ title, message, confirmLabel = "OK", cancelLabel = "", action = null }) => {
+    console.log("Opening modal:", { title, message, confirmLabel, cancelLabel });
     setModalTitle(title);
     setModalMessage(message);
     setModalConfirmLabel(confirmLabel);
@@ -196,6 +201,7 @@ function Scan() {
   };
 
   const handleEmergencyCall = () => {
+    console.log("Emergency call button clicked - opening modal");
     openModal({
       title: "Emergency Warning",
       message: "Genuine emergencies only. Misuse may cause panic and lead to legal consequences.",
@@ -208,9 +214,9 @@ function Scan() {
   return (
     <div className="page-container">
       <div className="page-card" style={{ maxWidth: 760, margin: "0 auto" }}>
-        <div className="page-hero" style={{ alignItems: 'center', gap: 16, marginBottom: 24 }}>
+        <div className="page-hero" style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
           <img src={carLogo} alt="TrackPro logo" style={{ width: 48, height: 48 }} />
-          <div>
+          <div style={{ textAlign: 'center' }}>
             <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 600, fontFamily: "'Bricolage Grotesque', 'Geist', sans-serif" }}>TrackPro</h1>
             <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted)', fontFamily: "'JetBrains Mono', monospace" }}>Frustration to connection</p>
           </div>
@@ -281,6 +287,7 @@ function Scan() {
               </button>
               <button
                 className="secondary-btn"
+                type="button"
                 onClick={handleEmergencyCall}
                 disabled={owner.doNotDisturb || !owner.emergencyContact}
               >
@@ -292,46 +299,44 @@ function Scan() {
           !error && <p className="page-subtitle">Loading vehicle information...</p>
         )}
       </div>
-      {modalOpen && (
-        <div className="register-modal-overlay">
-          <div className="register-modal-content">
-            <div className="register-modal-icon" style={{ background: modalTitle === "Emergency Warning" ? 'linear-gradient(135deg, #ff8a9b, #ff6b7a)' : 'linear-gradient(135deg, #38e0b2, #5effd1)', color: modalTitle === "Emergency Warning" ? '#fff' : '#022016' }}>
-              {modalTitle === "Emergency Warning" ? (
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L2 20h20L12 2Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              ) : (
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 4.5V12L16.5 14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M4.5 12C4.5 7.30558 7.30558 4.5 12 4.5C16.6944 4.5 19.5 7.30558 19.5 12C19.5 16.6944 16.6944 19.5 12 19.5C7.30558 19.5 4.5 16.6944 4.5 12Z" stroke="currentColor" strokeWidth="1.8" />
-                </svg>
-              )}
-            </div>
-            <h3 className="register-modal-title">{modalTitle}</h3>
-            <p className="register-modal-message">{modalMessage}</p>
-            <div className="form-actions" style={{ gap: modalCancelLabel ? 12 : 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
-              {modalCancelLabel && (
-                <button type="button" className="secondary-btn" onClick={closeModal} style={{ minWidth: 120 }}>
-                  {modalCancelLabel}
-                </button>
-              )}
-              <button
-                type="button"
-                className="primary-btn"
-                onClick={() => {
-                  if (modalAction) modalAction();
-                  closeModal();
-                }}
-                style={{ minWidth: 160 }}
-              >
-                {modalConfirmLabel}
+      <div className={`register-modal-overlay ${!modalOpen ? 'hidden' : ''}`}>
+        <div className="register-modal-content">
+          <div className="register-modal-icon" style={{ background: modalTitle === "Emergency Warning" ? 'linear-gradient(135deg, #ff8a9b, #ff6b7a)' : 'linear-gradient(135deg, #38e0b2, #5effd1)', color: modalTitle === "Emergency Warning" ? '#fff' : '#022016' }}>
+            {modalTitle === "Emergency Warning" ? (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 20h20L12 2Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 4.5V12L16.5 14.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4.5 12C4.5 7.30558 7.30558 4.5 12 4.5C16.6944 4.5 19.5 7.30558 19.5 12C19.5 16.6944 16.6944 19.5 12 19.5C7.30558 19.5 4.5 16.6944 4.5 12Z" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+            )}
+          </div>
+          <h3 className="register-modal-title">{modalTitle}</h3>
+          <p className="register-modal-message">{modalMessage}</p>
+          <div className="form-actions" style={{ gap: modalCancelLabel ? 12 : 0, display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {modalCancelLabel && (
+              <button type="button" className="secondary-btn" onClick={closeModal} style={{ minWidth: 120 }}>
+                {modalCancelLabel}
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => {
+                if (modalAction) modalAction();
+                closeModal();
+              }}
+              style={{ minWidth: 160 }}
+            >
+              {modalConfirmLabel}
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
