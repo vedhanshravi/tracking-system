@@ -607,7 +607,7 @@ function Dashboard() {
           </div>
           <div>
             <div className="dashboard-brand-title">TrackPro</div>
-            <div className="dashboard-brand-subtitle">Vehicle tracking</div>
+            <div className="dashboard-brand-subtitle">Frustration to connection</div>
           </div>
         </div>
 
