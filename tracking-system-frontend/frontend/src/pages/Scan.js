@@ -208,12 +208,17 @@ function Scan() {
   return (
     <div className="page-container">
       <div className="page-card" style={{ maxWidth: 760, margin: "0 auto" }}>
-        <div className="page-hero" style={{ alignItems: 'center', gap: 16 }}>
+        <div className="page-hero" style={{ alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <img src={carLogo} alt="TrackPro logo" style={{ width: 48, height: 48 }} />
           <div>
-            <h2 className="page-title">Vehicle Information</h2>
-            <p className="page-subtitle">Check owner contact details, emergency contacts, and route information quickly from the scan results.</p>
+            <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 600, fontFamily: "'Bricolage Grotesque', 'Geist', sans-serif" }}>TrackPro</h1>
+            <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: 'var(--muted)', fontFamily: "'JetBrains Mono', monospace" }}>Frustration to connection</p>
           </div>
+        </div>
+
+        <div className="page-hero" style={{ alignItems: 'center', gap: 16 }}>
+          <h2 className="page-title">Vehicle Information</h2>
+          <p className="page-subtitle">Check owner contact details, emergency contacts, and route information quickly from the scan results.</p>
         </div>
 
         {error && <p className="alert-banner">{error}</p>}
