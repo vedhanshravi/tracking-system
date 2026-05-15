@@ -127,7 +127,10 @@ function Login() {
             <div className="brand-logo">
               <img src={carLogo} alt="TrackPro logo" className="brand-logo-img" />
             </div>
-            <div className="brand-name">TrackPro</div>
+            <div>
+              <div className="brand-name">TrackPro</div>
+              <div className="brand-tagline">TrackPro - frustration to connection</div>
+            </div>
           </div>
 
           <div className="hero-copy">
