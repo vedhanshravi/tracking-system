@@ -166,9 +166,10 @@ router.post("/scan", async (req, res) => {
         country,
         latitude,
         longitude,
-        map_url
+        map_url,
+        scanned_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
       RETURNING id
       `,
       [vehicle.id, ip, city, country, latitude, longitude, mapUrl]
@@ -226,12 +227,23 @@ router.post("/scan/photo", scanPhotoUpload, async (req, res) => {
     }
 
     const result = await pool.query(
-      "SELECT id FROM scans WHERE id = $1",
+      "SELECT id, scanned_at FROM scans WHERE id = $1",
       [scanId]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Scan record not found" });
+    }
+
+    const scanRow = result.rows[0];
+    // Check expiry: scanned_at must be within last 5 minutes
+    const isExpiredResult = await pool.query(
+      "SELECT (NOW() - $1) > interval '5 minutes' AS expired",
+      [scanRow.scanned_at]
+    );
+
+    if (isExpiredResult.rows[0].expired) {
+      return res.status(410).json({ message: "Scan has expired. Please rescan the QR code." });
     }
 
     await pool.query(

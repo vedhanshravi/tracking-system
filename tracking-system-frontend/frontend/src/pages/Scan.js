@@ -157,6 +157,21 @@ function Scan() {
       });
 
       const data = await response.json().catch(() => null);
+
+      // Handle scan expiry (410 Gone)
+      if (response.status === 410) {
+        setPhotoUploadStatus("");
+        setScanId(null);
+        setPhotoPreviewUrl(null);
+        setPhotoUploaded(false);
+        openModal({
+          title: "QR Code Expired",
+          message: "The QR code scan has expired. Please scan the QR code again to continue.",
+          confirmLabel: "OK",
+        });
+        return;
+      }
+
       if (!response.ok) {
         setPhotoUploadStatus(data?.message || "Photo upload failed");
         setPhotoUploaded(false);
