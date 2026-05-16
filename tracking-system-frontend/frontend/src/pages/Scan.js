@@ -289,8 +289,18 @@ function Scan() {
               <button
                 className="secondary-btn"
                 type="button"
-                onClick={handleEmergencyCall}
+                onClick={() =>
+                  openModal({
+                    title: "Emergency Warning",
+                    message:
+                      "Genuine emergencies only. Misuse may cause panic and lead to legal consequences.",
+                    confirmLabel: "Call Emergency Contact",
+                    cancelLabel: "Cancel",
+                    action: () => startCall("emergency"),
+                  })
+                }
                 disabled={owner.doNotDisturb || !owner.emergencyContact}
+                data-testid="emergency-call-button"
               >
                 🚑 Medical Emergency - Call Emergency Contact
               </button>
