@@ -58,6 +58,23 @@ function Dashboard() {
     return civilianPattern.test(normalized) || militaryPattern.test(normalized);
   };
 
+  const getScanImageUrl = (scanImage) => {
+    if (!scanImage) return null;
+    const trimmed = typeof scanImage === 'string' ? scanImage.trim() : scanImage;
+    if (!trimmed) return null;
+
+    if (/^(https?:\/\/|\/\/)/i.test(trimmed)) {
+      return trimmed;
+    }
+
+    const baseUrl = process.env.REACT_APP_API_URL?.replace(/\/+$/, '') || window.location.origin;
+    const normalizedPath = trimmed.startsWith('/uploads/')
+      ? trimmed
+      : `/uploads/${trimmed.replace(/^\/+/, '')}`;
+
+    return `${baseUrl}${normalizedPath}`;
+  };
+
   const handleOwnerPhoneChange = (value) => {
     const cleaned = value.replace(/\D/g, '');
     setOwnerPhone(cleaned);
@@ -1277,6 +1294,7 @@ function Dashboard() {
                         <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
                           <p style={{ margin: 0, fontWeight: 700 }}>Latest Scans</p>
                           {latestLocations.map((location, index) => {
+                            const scanImageUrl = getScanImageUrl(location.scan_image || location.scan_image_url || location.scanImageUrl || location.scan_image_name);
                             const place = `${location.city || 'Unknown city'}, ${location.country || 'India'}`;
                             const scannedAt = location.scanned_at
                               ? new Date(location.scanned_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
@@ -1293,14 +1311,21 @@ function Dashboard() {
                                 {location.map_url && (
                                   <a className="link-btn" href={location.map_url} target="_blank" rel="noreferrer">Open map</a>
                                 )}
-                                {location.scan_image && (
+                                {scanImageUrl ? (
                                   <div style={{ marginTop: 12 }}>
                                     <img
-                                      src={`${process.env.REACT_APP_API_URL}/uploads/${location.scan_image}`}
+                                      src={scanImageUrl}
                                       alt="Scan photo"
+                                      onError={(event) => {
+                                        event.currentTarget.style.display = 'none';
+                                      }}
                                       style={{ width: '100%', maxHeight: 220, objectFit: 'cover', borderRadius: 12 }}
                                     />
                                   </div>
+                                ) : (
+                                  location.scan_image && (
+                                    <p style={{ marginTop: 12, color: '#fbbf24' }}>Image URL could not be resolved.</p>
+                                  )
                                 )}
                               </div>
                             );
