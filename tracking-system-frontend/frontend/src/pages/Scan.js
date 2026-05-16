@@ -289,7 +289,9 @@ function Scan() {
               <button
                 className="secondary-btn"
                 type="button"
-                onClick={() =>
+                onClick={(e) => {
+                  e && e.preventDefault && e.preventDefault();
+                  e && e.stopPropagation && e.stopPropagation();
                   openModal({
                     title: "Emergency Warning",
                     message:
@@ -297,8 +299,8 @@ function Scan() {
                     confirmLabel: "Call Emergency Contact",
                     cancelLabel: "Cancel",
                     action: () => startCall("emergency"),
-                  })
-                }
+                  });
+                }}
                 disabled={owner.doNotDisturb || !owner.emergencyContact}
                 data-testid="emergency-call-button"
               >
