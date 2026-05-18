@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 function Call() {
   const { vehicleNumber } = useParams();
@@ -9,7 +9,7 @@ function Call() {
   const [showWarning, setShowWarning] = useState(callType === "emergency");
   const [callInitiated, setCallInitiated] = useState(false);
 
-  const initiateCall = async () => {
+  const initiateCall = useCallback(async () => {
     try {
       await fetch(`${process.env.REACT_APP_API_URL}/vehicles/set-twiml`, {
         method: "POST",
@@ -25,14 +25,14 @@ function Call() {
     } catch (error) {
       console.error("Error initiating call:", error);
     }
-  };
+  }, [vehicleNumber, callType]);
 
   useEffect(() => {
     // Only initiate call if not emergency or if warning was acknowledged
     if (callType !== "emergency" && !callInitiated) {
       initiateCall();
     }
-  }, [callType, callInitiated]);
+  }, [callType, callInitiated, initiateCall]);
 
   const handleEmergencyConfirm = () => {
     setShowWarning(false);
