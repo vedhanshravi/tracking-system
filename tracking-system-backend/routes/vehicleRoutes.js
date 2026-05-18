@@ -99,7 +99,7 @@ const scanPhotoUpload = upload.single("scanPhoto");
 global.currentVehicleCall = null;
 
 router.post("/scan", async (req, res) => {
-  const { vehicleNumber, scanLatitude, scanLongitude, scanAccuracy } = req.body;
+  const { vehicleNumber, scanLatitude, scanLongitude, scanAccuracy, callType } = req.body;
 
   try {
     const result = await pool.query(
@@ -193,6 +193,7 @@ router.post("/scan", async (req, res) => {
       scanLongitude: hasScanCoords ? longitude : null,
       scanAccuracy: hasScanCoords ? parseFloat(scanAccuracy) : null,
       scanId,
+      callType: callType || "owner",
     });
 
     const coordinatesText = hasScanCoords
@@ -207,6 +208,180 @@ router.post("/scan", async (req, res) => {
       vehicle.owner_phone,
       `Your vehicle ${vehicleIdentifier} was scanned at ${new Date().toLocaleString()} ${placeText}.${coordinatesText}${locationText}`
     ).catch(err => console.error('SMS send failed:', err));
+
+    // Async: prune old scans for this vehicle to keep storage bounded
+    (async () => {
+      try {
+        // 1) Delete scans older than 2 months for this vehicle and remove files
+        const oldRes = await pool.query(
+          "SELECT scan_image FROM scans WHERE vehicle_id = $1 AND scanned_at < NOW() - interval '2 months' AND scan_image IS NOT NULL",
+          [vehicle.id]
+        );
+
+        for (const row of oldRes.rows) {
+          try {
+            const filePath = path.join(uploadDir, row.scan_image);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          } catch (fsErr) {
+            console.error('Failed to remove old scan image file:', fsErr);
+          }
+        }
+
+        await pool.query(
+          "DELETE FROM scans WHERE vehicle_id = $1 AND scanned_at < NOW() - interval '2 months'",
+          [vehicle.id]
+        );
+
+        // 2) Ensure we keep at most 100 scans per vehicle — delete oldest beyond latest 100
+        const overflow = await pool.query(
+          `SELECT id, scan_image FROM scans WHERE vehicle_id = $1 ORDER BY scanned_at DESC OFFSET 100`,
+          [vehicle.id]
+        );
+
+        if (overflow.rows.length > 0) {
+          const idsToDelete = overflow.rows.map(r => r.id);
+
+          for (const r of overflow.rows) {
+            try {
+              if (r.scan_image) {
+                const filePath = path.join(uploadDir, r.scan_image);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+              }
+            } catch (fsErr) {
+              console.error('Failed to remove overflow scan image file:', fsErr);
+            }
+          }
+
+          await pool.query(
+            'DELETE FROM scans WHERE id = ANY($1)',
+            [idsToDelete]
+          );
+        }
+      } catch (pruneErr) {
+        console.error('Scan pruning failed:', pruneErr);
+      }
+    })();
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// New endpoint: POST /scan/complete - Combines location + vehicle picture in ONE DB call
+// Then sends SMS only after successful DB insert
+router.post("/scan/complete", scanPhotoUpload, async (req, res) => {
+  try {
+    const { scanId, vehicleNumber, callType } = req.body;
+    const file = req.file;
+    let scanImageFileName = null;
+    let scanImageName = null;
+
+    // callType determines if vehicle picture is required
+    // "owner" = vehicle picture required
+    // "emergency" = vehicle picture optional
+    const isEmergencyFlow = callType === "emergency";
+
+    if (!scanId) {
+      return res.status(400).json({ message: "scanId is required" });
+    }
+
+    if (!vehicleNumber) {
+      return res.status(400).json({ message: "vehicleNumber is required" });
+    }
+
+    // For Call Owner flow: vehicle picture is mandatory
+    if (!isEmergencyFlow && !file) {
+      return res.status(400).json({ 
+        message: "Scan photo is required for Call Owner flow",
+        errorCode: "PHOTO_REQUIRED"
+      });
+    }
+
+    // For Emergency flow: vehicle picture is optional
+    if (file) {
+      // Validate scan expiry before updating
+      const scanRow = await pool.query(
+        "SELECT id, scanned_at FROM scans WHERE id = $1",
+        [scanId]
+      );
+
+      if (scanRow.rows.length === 0) {
+        return res.status(404).json({ message: "Scan record not found" });
+      }
+
+      // Check expiry: scanned_at must be within last 5 minutes
+      const isExpiredResult = await pool.query(
+        "SELECT (NOW() - $1) > interval '5 minutes' AS expired",
+        [scanRow.rows[0].scanned_at]
+      );
+
+      if (isExpiredResult.rows[0].expired) {
+        return res.status(410).json({ message: "Scan has expired. Please rescan the QR code." });
+      }
+
+      scanImageFileName = file.filename;
+      scanImageName = file.originalname;
+    }
+
+    // Get vehicle info for SMS content
+    const vehicleResult = await pool.query(
+      `
+      SELECT v.*, u.email, u.subscription_end, u.phone
+      FROM vehicles v
+      JOIN users u ON v.user_id = u.id
+      WHERE (UPPER(v.vehicle_number) = UPPER($1) OR UPPER(v.vehicle_display_name) = UPPER($1))
+        AND COALESCE(v.is_deleted, false) = false
+      `,
+      [vehicleNumber]
+    );
+
+    if (vehicleResult.rows.length === 0) {
+      return res.status(404).json({ message: "Vehicle not found" });
+    }
+
+    const vehicle = vehicleResult.rows[0];
+
+    // 🔥 SINGLE DB CALL: Update scans table with location + vehicle picture
+    const updateResult = await pool.query(
+      `UPDATE scans 
+       SET scan_image = $1, 
+           scan_image_name = $2 
+       WHERE id = $3
+       RETURNING id, vehicle_id, latitude, longitude, map_url, city, country`,
+      [scanImageFileName, scanImageName, scanId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ message: "Scan record not found" });
+    }
+
+    const scanData = updateResult.rows[0];
+
+    // 🔔 SEND SMS ONLY AFTER successful DB insert
+    const coordinatesText = scanData.latitude && scanData.longitude
+      ? ` Coordinates: ${scanData.latitude.toFixed(6)}, ${scanData.longitude.toFixed(6)}.`
+      : "";
+    const locationText = scanData.map_url ? ` Location: ${scanData.map_url}` : "";
+    const placeText = scanData.latitude && scanData.longitude 
+      ? "at the scanned coordinates" 
+      : `in ${scanData.city}, ${scanData.country}`;
+    const vehicleIdentifier = vehicle.vehicle_number || vehicle.vehicle_display_name || "your vehicle";
+
+    const smsBody = `Your vehicle ${vehicleIdentifier} was scanned at ${new Date().toLocaleString()} ${placeText}.${coordinatesText}${locationText}`;
+
+    // Send SMS asynchronously
+    notifyOwnerSms(vehicle.owner_phone, smsBody)
+      .catch(err => console.error('SMS send failed:', err));
+
+    res.json({
+      message: "Scan completed successfully with photo and location",
+      scanId: scanData.id,
+      hasPhoto: !!scanImageFileName,
+      scanImageUrl: scanImageFileName 
+        ? `${req.protocol}://${req.get("host")}/uploads/${scanImageFileName}`
+        : null,
+    });
 
   } catch (err) {
     console.error(err);
